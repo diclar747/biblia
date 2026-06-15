@@ -754,6 +754,113 @@ textarea.form-control {
   border-bottom: 1px solid var(--border-color);
 }
 
+/* Pestañas del panel lateral */
+.reader-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px 0;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  overflow-x: auto;
+}
+
+.reader-tab {
+  flex: 1;
+  min-width: 70px;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.reader-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.reader-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.reader-tab-panels {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.reader-tab-panel {
+  display: none;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.reader-tab-panel.active {
+  display: block;
+}
+
+.side-panel-content {
+  padding: 16px 20px;
+}
+
+.side-panel-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 40px 20px;
+  font-size: 0.92rem;
+}
+
+.side-panel-item {
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.side-panel-item:hover {
+  border-color: var(--primary);
+  background: var(--primary-glow);
+}
+
+.side-panel-item-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.side-panel-item-meta {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.side-panel-tag {
+  display: inline-block;
+  padding: 5px 12px;
+  margin: 4px;
+  background: var(--primary-glow);
+  color: var(--primary);
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.side-panel-tag:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
 .reader-title-bar {
   margin-bottom: 12px;
 }

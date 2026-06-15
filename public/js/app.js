@@ -577,6 +577,14 @@ function setupEventListeners() {
   if (readerPrevBtn) readerPrevBtn.addEventListener('click', loadPreviousChapter);
   if (readerNextBtn) readerNextBtn.addEventListener('click', loadNextChapter);
 
+  // Pestañas del panel lateral (Lector / Notas / Etiquetas / Listas / Historial)
+  document.querySelectorAll('#reader-tabs .reader-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.getAttribute('data-tab');
+      switchReaderTab(tab);
+    });
+  });
+
   // Paginación
   document.getElementById('prev-page-btn').addEventListener('click', () => {
     if (currentPage > 1) {
@@ -2203,4 +2211,172 @@ function setupPwaInstall() {
     showToast('¡Biblia Online instalada!', 'success');
     deferredInstallPrompt = null;
   });
+}
+
+
+// ===== PESTAÑAS DEL PANEL LATERAL (Lector / Notas / Etiquetas / Listas / Historial) =====
+
+function switchReaderTab(tab) {
+  document.querySelectorAll('#reader-tabs .reader-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
+  });
+  document.querySelectorAll('.reader-tab-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === `reader-tab-${tab}`);
+  });
+
+  if (tab === 'notas') loadSideNotes();
+  else if (tab === 'etiquetas') loadSideTags();
+  else if (tab === 'listas') loadSideLists();
+  else if (tab === 'historial') loadSideHistory();
+}
+
+async function loadSideNotes() {
+  const container = document.getElementById('side-notes-list');
+  if (!container) return;
+
+  if (!isLoggedIn()) {
+    container.innerHTML = '<p class="side-panel-empty">Inicia sesión para ver tus notas.</p>';
+    return;
+  }
+
+  container.innerHTML = '<p class="side-panel-empty">Cargando notas...</p>';
+  try {
+    const res = await fetch('/api/notes', { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error();
+    const notes = await res.json();
+
+    if (notes.length === 0) {
+      container.innerHTML = '<p class="side-panel-empty">No tienes notas guardadas.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    notes.forEach(note => {
+      const el = document.createElement('div');
+      el.className = 'side-panel-item';
+      const refs = note.verses && note.verses.length
+        ? note.verses.map(v => `${v.book_name} ${v.chapter_number}:${v.verse_number}`).join(', ')
+        : 'Sin versículos vinculados';
+      el.innerHTML = `
+        <div class="side-panel-item-title">${escapeHTML(note.title)}</div>
+        <div class="side-panel-item-meta">${escapeHTML(refs)} · ${new Date(note.updated_at).toLocaleDateString()}</div>
+      `;
+      el.addEventListener('click', () => {
+        if (window.showSection) window.showSection('section-user-dashboard');
+      });
+      container.appendChild(el);
+    });
+  } catch (error) {
+    container.innerHTML = '<p class="side-panel-empty">Error al cargar notas.</p>';
+  }
+}
+
+async function loadSideTags() {
+  const container = document.getElementById('side-tags-list');
+  if (!container) return;
+
+  container.innerHTML = '<p class="side-panel-empty">Cargando etiquetas...</p>';
+  try {
+    const res = await fetch('/api/tags');
+    const tags = await res.json();
+
+    if (tags.length === 0) {
+      container.innerHTML = '<p class="side-panel-empty">No hay etiquetas disponibles.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    tags.forEach(tag => {
+      const el = document.createElement('span');
+      el.className = 'side-panel-tag';
+      el.textContent = tag.name;
+      el.addEventListener('click', () => {
+        const query = `Tema: ${tag.name}`;
+        document.getElementById('main-search-input').value = query;
+        document.getElementById('results-search-input').value = query;
+        triggerSearch(query);
+      });
+      container.appendChild(el);
+    });
+  } catch (error) {
+    container.innerHTML = '<p class="side-panel-empty">Error al cargar etiquetas.</p>';
+  }
+}
+
+async function loadSideLists() {
+  const container = document.getElementById('side-lists-list');
+  if (!container) return;
+
+  if (!isLoggedIn()) {
+    container.innerHTML = '<p class="side-panel-empty">Inicia sesión para ver tus listas.</p>';
+    return;
+  }
+
+  container.innerHTML = '<p class="side-panel-empty">Cargando listas...</p>';
+  try {
+    const res = await fetch('/api/lists', { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error();
+    const lists = await res.json();
+
+    if (lists.length === 0) {
+      container.innerHTML = '<p class="side-panel-empty">No tienes listas guardadas.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    lists.forEach(list => {
+      const el = document.createElement('div');
+      el.className = 'side-panel-item';
+      el.innerHTML = `
+        <div class="side-panel-item-title">${escapeHTML(list.name)}</div>
+        <div class="side-panel-item-meta">${list.verse_count || 0} versículos guardados</div>
+      `;
+      el.addEventListener('click', () => {
+        if (window.showSection) window.showSection('section-user-dashboard');
+      });
+      container.appendChild(el);
+    });
+  } catch (error) {
+    container.innerHTML = '<p class="side-panel-empty">Error al cargar listas.</p>';
+  }
+}
+
+async function loadSideHistory() {
+  const container = document.getElementById('side-history-list');
+  if (!container) return;
+
+  if (!isLoggedIn()) {
+    container.innerHTML = '<p class="side-panel-empty">Inicia sesión para ver tu historial.</p>';
+    return;
+  }
+
+  container.innerHTML = '<p class="side-panel-empty">Cargando historial...</p>';
+  try {
+    const res = await fetch('/api/bible/history', { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error();
+    const history = await res.json();
+
+    if (history.length === 0) {
+      container.innerHTML = '<p class="side-panel-empty">No tienes historial de búsqueda.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    history.forEach(h => {
+      const el = document.createElement('div');
+      el.className = 'side-panel-item';
+      el.innerHTML = `
+        <div class="side-panel-item-title">${escapeHTML(h.query)}</div>
+        <div class="side-panel-item-meta">${new Date(h.created_at).toLocaleString()}</div>
+      `;
+      el.addEventListener('click', () => {
+        document.getElementById('main-search-input').value = h.query;
+        document.getElementById('results-search-input').value = h.query;
+        triggerSearch(h.query);
+      });
+      container.appendChild(el);
+    });
+  } catch (error) {
+    container.innerHTML = '<p class="side-panel-empty">Error al cargar historial.</p>';
+  }
 }
