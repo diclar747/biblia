@@ -268,7 +268,7 @@ const bibleController = {
       }
 
       if (tag) {
-        queryParts.push('v.id IN (SELECT vt2.verse_id FROM verse_tags vt2 JOIN tags t2 ON vt2.tag_id = t2.id WHERE t2.name = ? OR t2.id = ?)');
+        queryParts.push('v.id IN (SELECT vt2.verse_id FROM verse_tags vt2 JOIN tags t2 ON vt2.tag_id = t2.id WHERE t2.name = ? OR t2.id::text = ?)');
         queryParams.push(tag, tag);
       }
 
@@ -323,7 +323,7 @@ const bibleController = {
           queryParams.push(testament);
         }
         if (tag) {
-          queryParts.push('v.id IN (SELECT vt2.verse_id FROM verse_tags vt2 JOIN tags t2 ON vt2.tag_id = t2.id WHERE t2.name = ? OR t2.id = ?)');
+          queryParts.push('v.id IN (SELECT vt2.verse_id FROM verse_tags vt2 JOIN tags t2 ON vt2.tag_id = t2.id WHERE t2.name = ? OR t2.id::text = ?)');
           queryParams.push(tag, tag);
         }
         
