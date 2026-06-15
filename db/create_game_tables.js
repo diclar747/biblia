@@ -1,4 +1,3 @@
-// db/create_game_tables.js
 const { pool } = require('./database');
 
 async function main() {
@@ -14,7 +13,7 @@ async function main() {
         streak INT DEFAULT 0,
         last_played TIMESTAMP NULL DEFAULT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      );
     `);
 
     await pool.query(`
@@ -24,7 +23,7 @@ async function main() {
         unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (user_id, achievement_key),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      );
     `);
 
     console.log('✅ Tablas creadas correctamente en la base de datos.');

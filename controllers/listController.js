@@ -7,16 +7,16 @@ const listController = {
     const userId = req.user.id;
 
     try {
-      const [lists] = await pool.query(
+      const result = await pool.query(
         `SELECT l.id, l.name, l.description, l.created_at, COUNT(lv.verse_id) as verse_count
          FROM lists l
          LEFT JOIN list_verses lv ON l.id = lv.list_id
-         WHERE l.user_id = ?
+         WHERE l.user_id = $1
          GROUP BY l.id
          ORDER BY l.created_at DESC`,
         [userId]
       );
-      res.json(lists);
+      res.json(result.rows);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error al obtener las listas.' });
@@ -29,16 +29,14 @@ const listController = {
     const { id } = req.params;
 
     try {
-      // Verificar pertenencia de la lista
-      const [lists] = await pool.query('SELECT id, name, description, created_at FROM lists WHERE id = ? AND user_id = ?', [id, userId]);
-      if (lists.length === 0) {
+      const listsResult = await pool.query('SELECT id, name, description, created_at FROM lists WHERE id = $1 AND user_id = $2', [id, userId]);
+      if (listsResult.rows.length === 0) {
         return res.status(404).json({ error: 'Lista no encontrada o no pertenece al usuario.' });
       }
 
-      const list = lists[0];
+      const list = listsResult.rows[0];
 
-      // Obtener versículos de la lista
-      const [verses] = await pool.query(
+      const versesResult = await pool.query(
         `SELECT 
           lv.verse_id, 
           v.number as verse_number, 
@@ -52,12 +50,12 @@ const listController = {
          JOIN chapters c ON v.chapter_id = c.id
          JOIN books b ON c.book_id = b.id
          JOIN versions vt ON v.version_id = vt.id
-         WHERE lv.list_id = ?
+         WHERE lv.list_id = $1
          ORDER BY b.book_order, c.number, v.number`,
         [id]
       );
 
-      list.verses = verses;
+      list.verses = versesResult.rows;
       res.json(list);
     } catch (error) {
       console.error(error);
@@ -75,14 +73,14 @@ const listController = {
     }
 
     try {
-      const [result] = await pool.query(
-        'INSERT INTO lists (user_id, name, description) VALUES (?, ?, ?)',
+      const result = await pool.query(
+        'INSERT INTO lists (user_id, name, description) VALUES ($1, $2, $3) RETURNING id',
         [userId, name.trim(), description || '']
       );
 
       res.status(201).json({
         message: 'Lista creada con éxito.',
-        listId: result.insertId,
+        listId: result.rows[0].id,
         name: name.trim(),
         description: description || ''
       });
@@ -103,12 +101,12 @@ const listController = {
     }
 
     try {
-      const [result] = await pool.query(
-        'UPDATE lists SET name = ?, description = ? WHERE id = ? AND user_id = ?',
+      const result = await pool.query(
+        'UPDATE lists SET name = $1, description = $2 WHERE id = $3 AND user_id = $4',
         [name.trim(), description || '', id, userId]
       );
 
-      if (result.affectedRows === 0) {
+      if (result.rowCount === 0) {
         return res.status(404).json({ error: 'Lista no encontrada o no pertenece al usuario.' });
       }
 
@@ -125,8 +123,8 @@ const listController = {
     const { id } = req.params;
 
     try {
-      const [result] = await pool.query('DELETE FROM lists WHERE id = ? AND user_id = ?', [id, userId]);
-      if (result.affectedRows === 0) {
+      const result = await pool.query('DELETE FROM lists WHERE id = $1 AND user_id = $2', [id, userId]);
+      if (result.rowCount === 0) {
         return res.status(404).json({ error: 'Lista no encontrada o no pertenece al usuario.' });
       }
       res.json({ message: 'Lista eliminada con éxito.' });
@@ -139,7 +137,7 @@ const listController = {
   // Añadir un versículo a la lista
   async addVerseToList(req, res) {
     const userId = req.user.id;
-    const { id } = req.params; // list_id
+    const { id } = req.params;
     const { verse_id } = req.body;
 
     if (!verse_id) {
@@ -147,14 +145,12 @@ const listController = {
     }
 
     try {
-      // Verificar pertenencia de la lista
-      const [lists] = await pool.query('SELECT id FROM lists WHERE id = ? AND user_id = ?', [id, userId]);
-      if (lists.length === 0) {
+      const listsResult = await pool.query('SELECT id FROM lists WHERE id = $1 AND user_id = $2', [id, userId]);
+      if (listsResult.rows.length === 0) {
         return res.status(404).json({ error: 'Lista no encontrada o no pertenece al usuario.' });
       }
 
-      // Insertar versículo
-      await pool.query('INSERT IGNORE INTO list_verses (list_id, verse_id) VALUES (?, ?)', [id, verse_id]);
+      await pool.query('INSERT INTO list_verses (list_id, verse_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [id, verse_id]);
       res.status(201).json({ message: 'Versículo agregado a la lista con éxito.' });
     } catch (error) {
       console.error(error);
@@ -168,15 +164,13 @@ const listController = {
     const { id, verseId } = req.params;
 
     try {
-      // Verificar pertenencia de la lista
-      const [lists] = await pool.query('SELECT id FROM lists WHERE id = ? AND user_id = ?', [id, userId]);
-      if (lists.length === 0) {
+      const listsResult = await pool.query('SELECT id FROM lists WHERE id = $1 AND user_id = $2', [id, userId]);
+      if (listsResult.rows.length === 0) {
         return res.status(404).json({ error: 'Lista no encontrada o no pertenece al usuario.' });
       }
 
-      // Eliminar versículo de la lista
-      const [result] = await pool.query('DELETE FROM list_verses WHERE list_id = ? AND verse_id = ?', [id, verseId]);
-      if (result.affectedRows === 0) {
+      const result = await pool.query('DELETE FROM list_verses WHERE list_id = $1 AND verse_id = $2', [id, verseId]);
+      if (result.rowCount === 0) {
         return res.status(404).json({ error: 'El versículo no se encuentra en esta lista.' });
       }
 

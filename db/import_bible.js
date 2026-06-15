@@ -1,5 +1,4 @@
-// db/import_bible.js
-const mysql = require('mysql2/promise');
+const { Client } = require('pg');
 const https = require('https');
 require('dotenv').config();
 
@@ -26,6 +25,20 @@ function fetchJSON(url) {
   });
 }
 
+// Genera placeholders ($1,$2,...$N) para bulk insert
+function generatePlaceholders(rowCount, colCount, startAt = 1) {
+  const rows = [];
+  let index = startAt;
+  for (let r = 0; r < rowCount; r++) {
+    const cols = [];
+    for (let c = 0; c < colCount; c++) {
+      cols.push(`$${index++}`);
+    }
+    rows.push(`(${cols.join(', ')})`);
+  }
+  return { placeholders: rows.join(', '), nextIndex: index };
+}
+
 async function main() {
   console.log('⏳ Descargando la Biblia completa en español (RVR1960) desde GitHub...');
   let rawBible;
@@ -38,19 +51,18 @@ async function main() {
   }
 
   // Conectar a la base de datos
-  const connection = await mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'biblia_buscador',
-    charset: 'utf8mb4'
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
   });
 
   try {
-    console.log('⏳ Iniciando importación en la base de datos MySQL...');
-    
+    await client.connect();
+    console.log('⏳ Iniciando importación en la base de datos PostgreSQL...');
+
     // Obtener los libros precargados con su orden bíblico
-    const [dbBooks] = await connection.query('SELECT id, name, book_order FROM books ORDER BY book_order');
+    const dbBooksResult = await client.query('SELECT id, name, book_order FROM books ORDER BY book_order');
+    const dbBooks = dbBooksResult.rows;
     const bookOrderMap = {};
     dbBooks.forEach(b => {
       bookOrderMap[b.book_order] = b.id;
@@ -78,21 +90,23 @@ async function main() {
       // 1. Insertar capítulos del libro en bloque
       const chapterInsertData = [];
       for (let c = 0; c < chapters.length; c++) {
-        chapterInsertData.push([bookId, c + 1]);
+        chapterInsertData.push(bookId, c + 1);
       }
-      
+
       if (chapterInsertData.length > 0) {
-        await connection.query(
-          'INSERT IGNORE INTO chapters (book_id, number) VALUES ?',
-          [chapterInsertData]
+        const { placeholders } = generatePlaceholders(chapters.length, 2);
+        await client.query(
+          `INSERT INTO chapters (book_id, number) VALUES ${placeholders} ON CONFLICT (book_id, number) DO NOTHING`,
+          chapterInsertData
         );
       }
 
       // 2. Obtener IDs de capítulos creados
-      const [dbChapters] = await connection.query(
-        'SELECT id, number FROM chapters WHERE book_id = ?',
+      const dbChaptersResult = await client.query(
+        'SELECT id, number FROM chapters WHERE book_id = $1',
         [bookId]
       );
+      const dbChapters = dbChaptersResult.rows;
       const chapterIdMap = {};
       dbChapters.forEach(ch => {
         chapterIdMap[ch.number] = ch.id;
@@ -110,25 +124,28 @@ async function main() {
           const verseText = verses[v];
 
           if (verseText && verseText.trim() !== '') {
-            verseInsertData.push([chapterId, VERSION_ID, verseNum, verseText.trim()]);
+            verseInsertData.push(chapterId, VERSION_ID, verseNum, verseText.trim());
           }
         }
       }
 
       // 4. Insertar versículos en bloque para este libro (rápido)
       if (verseInsertData.length > 0) {
-        await connection.query(
-          'INSERT INTO verses (chapter_id, version_id, number, text) VALUES ? ON DUPLICATE KEY UPDATE text=VALUES(text)',
-          [verseInsertData]
+        const rowCount = verseInsertData.length / 4;
+        const { placeholders } = generatePlaceholders(rowCount, 4);
+        await client.query(
+          `INSERT INTO verses (chapter_id, version_id, number, text) VALUES ${placeholders}
+           ON CONFLICT (chapter_id, version_id, number) DO UPDATE SET text = EXCLUDED.text`,
+          verseInsertData
         );
       }
     }
 
-    console.log('🎉 ¡La Biblia RVR1960 ha sido importada completamente en la base de datos local!');
+    console.log('🎉 ¡La Biblia RVR1960 ha sido importada completamente en la base de datos PostgreSQL!');
   } catch (err) {
     console.error('❌ Error durante la importación:', err);
   } finally {
-    await connection.end();
+    await client.end();
   }
 }
 

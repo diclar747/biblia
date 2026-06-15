@@ -1,8 +1,22 @@
 // controllers/noteController.js
 const { pool } = require('../db/database');
 
+// Genera placeholders ($1,$2,...$N) para bulk insert
+function generatePlaceholders(rowCount, colCount, startAt = 1) {
+  const rows = [];
+  let index = startAt;
+  for (let r = 0; r < rowCount; r++) {
+    const cols = [];
+    for (let c = 0; c < colCount; c++) {
+      cols.push(`$${index++}`);
+    }
+    rows.push(`(${cols.join(', ')})`);
+  }
+  return { placeholders: rows.join(', '), nextIndex: index };
+}
+
 const noteController = {
-  // Obtener todas las notas del usuario (con opción de búsqueda interna y versículos vinculados)
+  // Obtener todas las notas del usuario
   async getNotes(req, res) {
     const userId = req.user.id;
     const { q } = req.query;
@@ -16,22 +30,22 @@ const noteController = {
           n.created_at, 
           n.updated_at
         FROM notes n
-        WHERE n.user_id = ?
+        WHERE n.user_id = $1
       `;
       const queryParams = [userId];
 
       if (q && q.trim() !== '') {
-        sql += ' AND (n.title LIKE ? OR n.content LIKE ?)';
+        sql += ' AND (n.title ILIKE $2 OR n.content ILIKE $3)';
         queryParams.push(`%${q.trim()}%`, `%${q.trim()}%`);
       }
 
       sql += ' ORDER BY n.updated_at DESC';
 
-      const [notes] = await pool.query(sql, queryParams);
+      const notesResult = await pool.query(sql, queryParams);
+      const notes = notesResult.rows;
 
-      // Para cada nota, obtener sus versículos vinculados
       for (let note of notes) {
-        const [verses] = await pool.query(
+        const versesResult = await pool.query(
           `SELECT 
             v.id, 
             v.number as verse_number, 
@@ -44,10 +58,10 @@ const noteController = {
            JOIN chapters c ON v.chapter_id = c.id
            JOIN books b ON c.book_id = b.id
            JOIN versions vt ON v.version_id = vt.id
-           WHERE nv.note_id = ?`,
+           WHERE nv.note_id = $1`,
           [note.id]
         );
-        note.verses = verses;
+        note.verses = versesResult.rows;
       }
 
       res.json(notes);
@@ -66,34 +80,33 @@ const noteController = {
       return res.status(400).json({ error: 'El título y el contenido son obligatorios.' });
     }
 
-    const connection = await pool.getConnection();
+    const client = await pool.connect();
     try {
-      await connection.beginTransaction();
+      await client.query('BEGIN');
 
-      // 1. Insertar nota
-      const [noteResult] = await connection.query(
-        'INSERT INTO notes (user_id, title, content) VALUES (?, ?, ?)',
+      const noteResult = await client.query(
+        'INSERT INTO notes (user_id, title, content) VALUES ($1, $2, $3) RETURNING id',
         [userId, title, content]
       );
-      const noteId = noteResult.insertId;
+      const noteId = noteResult.rows[0].id;
 
-      // 2. Asociar versículos si se proporcionaron
       if (verse_ids && Array.isArray(verse_ids) && verse_ids.length > 0) {
-        const insertValues = verse_ids.map(verseId => [noteId, verseId]);
-        await connection.query(
-          'INSERT INTO note_verses (note_id, verse_id) VALUES ?',
-          [insertValues]
+        const values = verse_ids.flatMap(verseId => [noteId, verseId]);
+        const { placeholders } = generatePlaceholders(verse_ids.length, 2);
+        await client.query(
+          `INSERT INTO note_verses (note_id, verse_id) VALUES ${placeholders}`,
+          values
         );
       }
 
-      await connection.commit();
+      await client.query('COMMIT');
       res.status(201).json({ message: 'Nota creada con éxito.', noteId });
     } catch (error) {
-      await connection.rollback();
+      await client.query('ROLLBACK');
       console.error(error);
       res.status(500).json({ error: 'Error al crear la nota.' });
     } finally {
-      connection.release();
+      client.release();
     }
   },
 
@@ -107,43 +120,40 @@ const noteController = {
       return res.status(400).json({ error: 'El título y el contenido son obligatorios.' });
     }
 
-    const connection = await pool.getConnection();
+    const client = await pool.connect();
     try {
-      await connection.beginTransaction();
+      await client.query('BEGIN');
 
-      // Verificar pertenencia de la nota
-      const [existing] = await connection.query('SELECT 1 FROM notes WHERE id = ? AND user_id = ?', [id, userId]);
-      if (existing.length === 0) {
-        connection.release();
+      const existingResult = await client.query('SELECT 1 FROM notes WHERE id = $1 AND user_id = $2', [id, userId]);
+      if (existingResult.rows.length === 0) {
+        client.release();
         return res.status(404).json({ error: 'Nota no encontrada o no pertenece al usuario.' });
       }
 
-      // 1. Actualizar nota
-      await connection.query(
-        'UPDATE notes SET title = ?, content = ? WHERE id = ?',
+      await client.query(
+        'UPDATE notes SET title = $1, content = $2 WHERE id = $3',
         [title, content, id]
       );
 
-      // 2. Eliminar versículos vinculados antiguos
-      await connection.query('DELETE FROM note_verses WHERE note_id = ?', [id]);
+      await client.query('DELETE FROM note_verses WHERE note_id = $1', [id]);
 
-      // 3. Vincular nuevos versículos
       if (verse_ids && Array.isArray(verse_ids) && verse_ids.length > 0) {
-        const insertValues = verse_ids.map(verseId => [id, verseId]);
-        await connection.query(
-          'INSERT INTO note_verses (note_id, verse_id) VALUES ?',
-          [insertValues]
+        const values = verse_ids.flatMap(verseId => [id, verseId]);
+        const { placeholders } = generatePlaceholders(verse_ids.length, 2);
+        await client.query(
+          `INSERT INTO note_verses (note_id, verse_id) VALUES ${placeholders}`,
+          values
         );
       }
 
-      await connection.commit();
+      await client.query('COMMIT');
       res.json({ message: 'Nota actualizada con éxito.' });
     } catch (error) {
-      await connection.rollback();
+      await client.query('ROLLBACK');
       console.error(error);
       res.status(500).json({ error: 'Error al actualizar la nota.' });
     } finally {
-      connection.release();
+      client.release();
     }
   },
 
@@ -153,8 +163,8 @@ const noteController = {
     const { id } = req.params;
 
     try {
-      const [result] = await pool.query('DELETE FROM notes WHERE id = ? AND user_id = ?', [id, userId]);
-      if (result.affectedRows === 0) {
+      const result = await pool.query('DELETE FROM notes WHERE id = $1 AND user_id = $2', [id, userId]);
+      if (result.rowCount === 0) {
         return res.status(404).json({ error: 'Nota no encontrada o no pertenece al usuario.' });
       }
       res.json({ message: 'Nota eliminada con éxito.' });

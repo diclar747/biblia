@@ -27,27 +27,25 @@ const gameController = {
     const userId = req.user.id;
 
     try {
-      // 1. Obtener estadísticas del juego (o crear fila si no existe)
-      let [rows] = await pool.query('SELECT * FROM user_game_stats WHERE user_id = ?', [userId]);
+      let result = await pool.query('SELECT * FROM user_game_stats WHERE user_id = $1', [userId]);
+      let rows = result.rows;
       
       if (rows.length === 0) {
-        await pool.query('INSERT INTO user_game_stats (user_id, xp, level, crowns, streak) VALUES (?, 0, 1, 0, 0)', [userId]);
-        const [newRows] = await pool.query('SELECT * FROM user_game_stats WHERE user_id = ?', [userId]);
-        rows = newRows;
+        await pool.query('INSERT INTO user_game_stats (user_id, xp, level, crowns, streak) VALUES ($1, 0, 1, 0, 0)', [userId]);
+        const newResult = await pool.query('SELECT * FROM user_game_stats WHERE user_id = $1', [userId]);
+        rows = newResult.rows;
       }
 
       const stats = rows[0];
 
-      // 2. Obtener logros desbloqueados
-      const [achievementsRows] = await pool.query('SELECT achievement_key FROM user_achievements WHERE user_id = ?', [userId]);
-      const achievements = achievementsRows.map(a => a.achievement_key);
+      const achievementsResult = await pool.query('SELECT achievement_key FROM user_achievements WHERE user_id = $1', [userId]);
+      const achievements = achievementsResult.rows.map(a => a.achievement_key);
 
-      // 3. Obtener clasificación/rango en el ranking mundial
-      const [rankRows] = await pool.query(
-        'SELECT COUNT(*) + 1 as rank_pos FROM user_game_stats WHERE xp > ?',
+      const rankResult = await pool.query(
+        'SELECT COUNT(*) + 1 as rank_pos FROM user_game_stats WHERE xp > $1',
         [stats.xp]
       );
-      const rankingPosition = rankRows[0].rank_pos;
+      const rankingPosition = parseInt(rankResult.rows[0].rank_pos);
 
       res.json({
         xp: stats.xp,
@@ -74,19 +72,18 @@ const gameController = {
     }
 
     try {
-      // 1. Obtener estadísticas actuales
-      let [rows] = await pool.query('SELECT * FROM user_game_stats WHERE user_id = ?', [userId]);
+      let result = await pool.query('SELECT * FROM user_game_stats WHERE user_id = $1', [userId]);
+      let rows = result.rows;
       if (rows.length === 0) {
-        await pool.query('INSERT INTO user_game_stats (user_id, xp, level, crowns, streak) VALUES (?, 0, 1, 0, 0)', [userId]);
-        const [newRows] = await pool.query('SELECT * FROM user_game_stats WHERE user_id = ?', [userId]);
-        rows = newRows;
+        await pool.query('INSERT INTO user_game_stats (user_id, xp, level, crowns, streak) VALUES ($1, 0, 1, 0, 0)', [userId]);
+        const newResult = await pool.query('SELECT * FROM user_game_stats WHERE user_id = $1', [userId]);
+        rows = newResult.rows;
       }
 
       let { xp, level, crowns, streak, last_played } = rows[0];
       xp += parseInt(xpToAdd);
       if (crownsToAdd) crowns += parseInt(crownsToAdd);
 
-      // Calcular racha (streak) básica
       const now = new Date();
       if (completeGame) {
         if (last_played) {
@@ -97,31 +94,28 @@ const gameController = {
           if (diffDays === 1) {
             streak += 1;
           } else if (diffDays > 1) {
-            streak = 1; // Racha rota, iniciar de nuevo
+            streak = 1;
           }
         } else {
-          streak = 1; // Primera vez jugando
+          streak = 1;
         }
         last_played = now;
       }
 
-      // Sistema de Niveles (Nivel = 1 + floor(sqrt(XP / 50)))
       const newLevel = Math.max(1, Math.floor(Math.sqrt(xp / 50)) + 1);
       const isLevelUp = newLevel > level;
       level = newLevel;
 
-      // Actualizar en base de datos
       await pool.query(
-        'UPDATE user_game_stats SET xp = ?, level = ?, crowns = ?, streak = ?, last_played = ? WHERE user_id = ?',
+        'UPDATE user_game_stats SET xp = $1, level = $2, crowns = $3, streak = $4, last_played = $5 WHERE user_id = $6',
         [xp, level, crowns, streak, last_played, userId]
       );
 
-      // 2. Verificar logros a desbloquear
       const unlocked = [];
       const checkAndUnlock = async (key) => {
-        const [existing] = await pool.query('SELECT 1 FROM user_achievements WHERE user_id = ? AND achievement_key = ?', [userId, key]);
-        if (existing.length === 0) {
-          await pool.query('INSERT INTO user_achievements (user_id, achievement_key) VALUES (?, ?)', [userId, key]);
+        const existingResult = await pool.query('SELECT 1 FROM user_achievements WHERE user_id = $1 AND achievement_key = $2', [userId, key]);
+        if (existingResult.rows.length === 0) {
+          await pool.query('INSERT INTO user_achievements (user_id, achievement_key) VALUES ($1, $2)', [userId, key]);
           unlocked.push(key);
         }
       };
@@ -165,7 +159,6 @@ const gameController = {
     try {
       let questions = [];
       
-      // Mapear modos a claves del JSON
       if (mode === 'riddles') questions = gameData.riddles || [];
       else if (mode === 'characters') questions = gameData.characters || [];
       else if (mode === 'verses') questions = gameData.verses || [];
@@ -175,18 +168,14 @@ const gameController = {
       else if (mode === 'books') questions = gameData.books || [];
       else if (mode === 'memory') questions = gameData.memory || [];
       else {
-        // Modo aleatorio (desafío diario o contrarreloj)
-        // Combinamos verdaderos/falsos y versículos incompletos
         const tf = (gameData.true_false || []).map(q => ({ ...q, type: 'true_false' }));
         const vs = (gameData.verses || []).map(q => ({ ...q, type: 'verses' }));
         const bk = (gameData.books || []).map(q => ({ ...q, type: 'books' }));
         questions = [...tf, ...vs, ...bk];
       }
 
-      // Barajar preguntas
       const shuffled = [...questions].sort(() => 0.5 - Math.random());
       
-      // Retornar máximo de 10 preguntas
       res.json(shuffled.slice(0, 10));
     } catch (error) {
       console.error(error);
@@ -197,7 +186,7 @@ const gameController = {
   // Obtener ranking global (Leaderboard)
   async getLeaderboard(req, res) {
     try {
-      const [rows] = await pool.query(`
+      const result = await pool.query(`
         SELECT u.id, u.name, u.profile_image, gs.xp, gs.level
         FROM user_game_stats gs
         JOIN users u ON gs.user_id = u.id
@@ -205,7 +194,7 @@ const gameController = {
         LIMIT 10
       `);
 
-      res.json(rows);
+      res.json(result.rows);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error al recuperar tabla de posiciones.' });
@@ -221,16 +210,14 @@ const gameController = {
     }
 
     try {
-      // Simular respuestas detalladas de una IA teológica basada en el texto
       let explanation = '';
       
       if (question.includes('Moisés') || answer.includes('Moisés')) {
-        explanation = 'Moisés es una de las figuras más importantes de la Biblia. Su nombre significa \"Rescatado de las aguas\". Dios lo llamó para liberar a los hebreos, entregó las Tablas de la Ley en el Monte Sinaí y escribió el Pentateuco (primeros 5 libros). Su viaje por el desierto enseña perseverancia y fe frente a la rebeldía del pueblo.';
+        explanation = 'Moisés es una de las figuras más importantes de la Biblia. Su nombre significa "Rescatado de las aguas". Dios lo llamó para liberar a los hebreos, entregó las Tablas de la Ley en el Monte Sinaí y escribió el Pentateuco (primeros 5 libros). Su viaje por el desierto enseña perseverancia y fe frente a la rebeldía del pueblo.';
       } else if (question.includes('David') || answer.includes('David')) {
         explanation = 'David, pastor de Belén, ilustra cómo Dios no mira las apariencias sino el corazón (1 Samuel 16:7). Su victoria contra el gigante Goliat demuestra que el poder de la fe triunfa sobre la fuerza humana. Autor de gran parte de los Salmos, es ancestro directo de Jesucristo en la carne.';
       } else if (question.includes('Jonás') || answer.includes('Jonás')) {
-        explanation = 'El libro de Jonás es un testimonio de la misericordia universal de Dios. Al principio Jonás intentó huir porque no quería que Dios perdonara a Nínive (ciudad enemiga). Su permanencia de tres días en el pez fue referenciada por Jesús como prefiguración de su propia muerte y resurrección (Mateo 12:40).';
-      } else if (question.includes('arca') || answer.includes('Noé')) {
+        explanation = 'El libro de Jonás es un testimonio de la misericordia universal de Dios. Al principio Jonás intentó huir porque no quería que Dios perdonara a Nínive (ciudad enemiga). Su permanencia de tres días en el pez fue referenciada por Jesús como prefiguración de su propia muerte y resurrección (Mateo 12:40).';      } else if (question.includes('arca') || answer.includes('Noé')) {
         explanation = 'El Arca de Noé simboliza refugio y salvación divina. Representa el juicio de Dios sobre la corrupción de la tierra, pero a la vez abre una puerta de misericordia a través del pacto del arcoíris. En el Nuevo Testamento, el arca es tipo del bautismo y de la salvación de las almas en Cristo.';
       } else if (question.includes('Pedro') || answer.includes('Pedro')) {
         explanation = 'Pedro destaca por su carácter impulsivo pero profundamente leal. Su caída al negar a Jesús y su posterior restauración en Juan 21 muestran el amor perdonador de Dios. Fue el líder de la iglesia en Jerusalén y el primer apóstol en abrir la puerta del Evangelio a los gentiles (Cornelio).';

@@ -1,13 +1,13 @@
-USE `biblia_buscador`;
+-- Seed PostgreSQL para Biblia Online
 
 -- Insertar versiones de la Biblia
-INSERT INTO `versions` (`id`, `name`, `abbreviation`) VALUES
+INSERT INTO versions (id, name, abbreviation) VALUES
 (1, 'Reina Valera 1960', 'RVR1960'),
 (2, 'Nueva Versión Internacional', 'NVI')
-ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, abbreviation = EXCLUDED.abbreviation;
 
 -- Insertar libros de la Biblia
-INSERT INTO `books` (`id`, `name`, `abbreviation`, `testament`, `book_order`) VALUES
+INSERT INTO books (id, name, abbreviation, testament, book_order) VALUES
 (1, 'Génesis', 'GEN', 'Antiguo', 1),
 (2, 'Éxodo', 'EXO', 'Antiguo', 2),
 (3, 'Levítico', 'LEV', 'Antiguo', 3),
@@ -74,24 +74,20 @@ INSERT INTO `books` (`id`, `name`, `abbreviation`, `testament`, `book_order`) VA
 (64, '3 Juan', '3JU', 'Nuevo', 64),
 (65, 'Judas', 'JUD', 'Nuevo', 65),
 (66, 'Apocalipsis', 'APO', 'Nuevo', 66)
-ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `abbreviation`=VALUES(`abbreviation`), `testament`=VALUES(`testament`), `book_order`=VALUES(`book_order`);
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, abbreviation = EXCLUDED.abbreviation, testament = EXCLUDED.testament, book_order = EXCLUDED.book_order;
 
 -- Insertar algunos capítulos correspondientes a nuestras pruebas
--- Génesis Capítulo 1
-INSERT INTO `chapters` (`id`, `book_id`, `number`) VALUES (1, 1, 1) ON DUPLICATE KEY UPDATE `book_id`=VALUES(`book_id`);
--- Salmos Capítulo 23
-INSERT INTO `chapters` (`id`, `book_id`, `number`) VALUES (2, 19, 23) ON DUPLICATE KEY UPDATE `book_id`=VALUES(`book_id`);
--- Juan Capítulo 1
-INSERT INTO `chapters` (`id`, `book_id`, `number`) VALUES (3, 43, 1) ON DUPLICATE KEY UPDATE `book_id`=VALUES(`book_id`);
--- Juan Capítulo 3
-INSERT INTO `chapters` (`id`, `book_id`, `number`) VALUES (4, 43, 3) ON DUPLICATE KEY UPDATE `book_id`=VALUES(`book_id`);
--- Filipenses Capítulo 4
-INSERT INTO `chapters` (`id`, `book_id`, `number`) VALUES (5, 50, 4) ON DUPLICATE KEY UPDATE `book_id`=VALUES(`book_id`);
--- Josué Capítulo 1
-INSERT INTO `chapters` (`id`, `book_id`, `number`) VALUES (6, 6, 1) ON DUPLICATE KEY UPDATE `book_id`=VALUES(`book_id`);
+INSERT INTO chapters (id, book_id, number) VALUES
+(1, 1, 1),
+(2, 19, 23),
+(3, 43, 1),
+(4, 43, 3),
+(5, 50, 4),
+(6, 6, 1)
+ON CONFLICT (id) DO UPDATE SET book_id = EXCLUDED.book_id, number = EXCLUDED.number;
 
 -- Insertar Versículos en RVR1960 (version_id = 1)
-INSERT INTO `verses` (`chapter_id`, `version_id`, `number`, `text`) VALUES
+INSERT INTO verses (chapter_id, version_id, number, text) VALUES
 -- Génesis 1 (RVR1960)
 (1, 1, 1, 'En el principio creó Dios los cielos y la tierra.'),
 (1, 1, 2, 'Y la tierra estaba desordenada y vacía, y las tinieblas estaban sobre la faz del abismo, y el Espíritu de Dios se movía sobre la faz de las aguas.'),
@@ -117,10 +113,10 @@ INSERT INTO `verses` (`chapter_id`, `version_id`, `number`, `text`) VALUES
 (5, 1, 13, 'Todo lo puedo en Cristo que me fortalece.'),
 -- Josué 1:9 (RVR1960)
 (6, 1, 9, 'Mira que te mando que te esfuerces y seas valiente; no temas ni desmayes, porque Jehová tu Dios estará contigo en dondequiera que vayas.')
-ON DUPLICATE KEY UPDATE `text`=VALUES(`text`);
+ON CONFLICT (chapter_id, version_id, number) DO UPDATE SET text = EXCLUDED.text;
 
 -- Insertar Versículos en NVI (version_id = 2)
-INSERT INTO `verses` (`chapter_id`, `version_id`, `number`, `text`) VALUES
+INSERT INTO verses (chapter_id, version_id, number, text) VALUES
 -- Génesis 1 (NVI)
 (1, 2, 1, 'Dios, en el principio, creó los cielos y la tierra.'),
 (1, 2, 2, 'La tierra era un caos total, las tinieblas cubrían el abismo, y el Espíritu de Dios se iba cerniendo sobre la superficie de las aguas.'),
@@ -146,10 +142,10 @@ INSERT INTO `verses` (`chapter_id`, `version_id`, `number`, `text`) VALUES
 (5, 2, 13, 'Todo lo puedo en Cristo que me fortalece.'),
 -- Josué 1:9 (NVI)
 (6, 2, 9, 'Ya te lo he ordenado: ¡Sé fuerte y valiente! No tengas miedo ni te desanimes, porque el Señor tu Dios te acompañará dondequiera que vayas.')
-ON DUPLICATE KEY UPDATE `text`=VALUES(`text`);
+ON CONFLICT (chapter_id, version_id, number) DO UPDATE SET text = EXCLUDED.text;
 
 -- Insertar etiquetas globales por defecto
-INSERT INTO `tags` (`id`, `name`) VALUES
+INSERT INTO tags (id, name) VALUES
 (1, 'Fe'),
 (2, 'Amor'),
 (3, 'Esperanza'),
@@ -159,23 +155,28 @@ INSERT INTO `tags` (`id`, `name`) VALUES
 (7, 'Protección'),
 (8, 'Sabiduría'),
 (9, 'Sanidad')
-ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
 -- Asociar etiquetas a algunos versículos de ejemplo
 -- Salmo 23:1 (Jehová es mi pastor) -> Fe (1) y Protección (7)
 -- RVR1960: verse_id para Salmo 23:1 (RVR1960) es 6
 -- NVI: verse_id para Salmo 23:1 (NVI) es 21
-INSERT INTO `verse_tags` (`verse_id`, `tag_id`) VALUES
+INSERT INTO verse_tags (verse_id, tag_id) VALUES
 (6, 1), (6, 7),
 (21, 1), (21, 7)
-ON DUPLICATE KEY UPDATE `verse_id`=VALUES(`verse_id`);
+ON CONFLICT (verse_id, tag_id) DO NOTHING;
 
 -- Crear usuarios de demostración predeterminados con hashes bcrypt válidos
--- admin123 -> $2b$10$8Hq1meMiXjj76OF/c//ZCOgNWQnpt/0HutYdTqxur9cZawNxvBLOa
--- juan123  -> $2b$10$yqGaKMc.7s00vgPccHUk4eBeN.aJKV69EeJfDSC5CQLhBDTQdh9LW
--- maria123 -> $2b$10$6CzJCI7bgm6t2QY2moIkne5VHJfUI7oxFP2jdQZhSS/XIkCEwGaJq
-INSERT INTO `users` (`id`, `name`, `email`, `password`, `role`, `default_version_id`) VALUES
+INSERT INTO users (id, name, email, password, role, default_version_id) VALUES
 (1, 'Administrador', 'admin@biblia.com', '$2b$10$8Hq1meMiXjj76OF/c//ZCOgNWQnpt/0HutYdTqxur9cZawNxvBLOa', 'admin', 1),
 (2, 'Juan Lector', 'juan@biblia.com', '$2b$10$yqGaKMc.7s00vgPccHUk4eBeN.aJKV69EeJfDSC5CQLhBDTQdh9LW', 'user', 1),
 (3, 'María Lectora', 'maria@biblia.com', '$2b$10$6CzJCI7bgm6t2QY2moIkne5VHJfUI7oxFP2jdQZhSS/XIkCEwGaJq', 'user', 2)
-ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `password`=VALUES(`password`), `role`=VALUES(`role`), `default_version_id`=VALUES(`default_version_id`);
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, password = EXCLUDED.password, role = EXCLUDED.role, default_version_id = EXCLUDED.default_version_id;
+
+-- Actualizar secuencias para que los próximos INSERT sin id específico no fallen
+SELECT setval('versions_id_seq', COALESCE((SELECT MAX(id) FROM versions), 1));
+SELECT setval('books_id_seq', COALESCE((SELECT MAX(id) FROM books), 1));
+SELECT setval('chapters_id_seq', COALESCE((SELECT MAX(id) FROM chapters), 1));
+SELECT setval('verses_id_seq', COALESCE((SELECT MAX(id) FROM verses), 1));
+SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 1));
+SELECT setval('tags_id_seq', COALESCE((SELECT MAX(id) FROM tags), 1));

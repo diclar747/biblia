@@ -1,4 +1,4 @@
-const { pool } = require('../db/database');
+const { pool, toPgSql } = require('../db/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -13,28 +13,25 @@ const authController = {
     }
 
     try {
-      // Verificar si el usuario ya existe
-      const [existingUsers] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
-      if (existingUsers.length > 0) {
+      const existingUsersResult = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+      if (existingUsersResult.rows.length > 0) {
         return res.status(400).json({ error: 'El correo electrónico ya está registrado.' });
       }
 
-      // Cifrar la contraseña
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      // Asignar versión por defecto (RVR1960 por defecto si no se indica)
       const defVersion = default_version_id || 1;
 
-      // Insertar usuario
-      const [result] = await pool.query(
-        'INSERT INTO users (name, email, password, role, default_version_id) VALUES (?, ?, ?, ?, ?)',
+      const result = await pool.query(
+        'INSERT INTO users (name, email, password, role, default_version_id) VALUES ($1, $2, $3, $4, $5) RETURNING id',
         [name, email, hashedPassword, 'user', defVersion]
       );
 
-      // Generar token JWT
+      const userId = result.rows[0].id;
+
       const token = jwt.sign(
-        { id: result.insertId, name, email, role: 'user' },
+        { id: userId, name, email, role: 'user' },
         process.env.JWT_SECRET || 'supersecret_key_for_bibliaflow_2026',
         { expiresIn: '30d' }
       );
@@ -43,7 +40,7 @@ const authController = {
         message: 'Usuario registrado con éxito.',
         token,
         user: {
-          id: result.insertId,
+          id: userId,
           name,
           email,
           role: 'user',
@@ -65,21 +62,18 @@ const authController = {
     }
 
     try {
-      // Buscar usuario en la base de datos
-      const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-      if (users.length === 0) {
+      const usersResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+      if (usersResult.rows.length === 0) {
         return res.status(400).json({ error: 'Credenciales inválidas.' });
       }
 
-      const user = users[0];
+      const user = usersResult.rows[0];
 
-      // Verificar contraseña
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
         return res.status(400).json({ error: 'Credenciales inválidas.' });
       }
 
-      // Generar token JWT
       const token = jwt.sign(
         { id: user.id, name: user.name, email: user.email, role: user.role },
         process.env.JWT_SECRET || 'supersecret_key_for_bibliaflow_2026',
@@ -107,21 +101,20 @@ const authController = {
   // Obtener perfil del usuario autenticado
   async getProfile(req, res) {
     try {
-      const [users] = await pool.query(
-        'SELECT id, name, email, role, default_version_id, profile_image, created_at FROM users WHERE id = ?',
+      const usersResult = await pool.query(
+        'SELECT id, name, email, role, default_version_id, profile_image, created_at FROM users WHERE id = $1',
         [req.user.id]
       );
-      if (users.length === 0) {
+      if (usersResult.rows.length === 0) {
         return res.status(404).json({ error: 'Usuario no encontrado.' });
       }
 
-      // Obtener detalles de la versión por defecto
-      const user = users[0];
+      const user = usersResult.rows[0];
       let versionAbbr = 'RVR1960';
       if (user.default_version_id) {
-        const [versions] = await pool.query('SELECT abbreviation FROM versions WHERE id = ?', [user.default_version_id]);
-        if (versions.length > 0) {
-          versionAbbr = versions[0].abbreviation;
+        const versionsResult = await pool.query('SELECT abbreviation FROM versions WHERE id = $1', [user.default_version_id]);
+        if (versionsResult.rows.length > 0) {
+          versionAbbr = versionsResult.rows[0].abbreviation;
         }
       }
 
@@ -166,7 +159,8 @@ const authController = {
       }
 
       queryParams.push(userId);
-      await pool.query(`UPDATE users SET ${queryParts.join(', ')} WHERE id = ?`, queryParams);
+      const sql = toPgSql(`UPDATE users SET ${queryParts.join(', ')} WHERE id = ?`);
+      await pool.query(sql, queryParams);
 
       res.json({ message: 'Perfil actualizado con éxito.' });
     } catch (error) {
@@ -183,7 +177,7 @@ const authController = {
 
     try {
       const profileImageUrl = `/uploads/profile_pics/${req.file.filename}`;
-      await pool.query('UPDATE users SET profile_image = ? WHERE id = ?', [profileImageUrl, req.user.id]);
+      await pool.query('UPDATE users SET profile_image = $1 WHERE id = $2', [profileImageUrl, req.user.id]);
 
       res.json({
         message: 'Foto de perfil actualizada con éxito.',

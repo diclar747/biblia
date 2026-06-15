@@ -1,4 +1,4 @@
-const { pool } = require('../db/database');
+const { pool, toPgSql } = require('../db/database');
 
 // Algoritmo de distancia de Levenshtein para coincidencia difusa de libros
 function getLevenshteinDistance(a, b) {
@@ -15,9 +15,9 @@ function getLevenshteinDistance(a, b) {
         matrix[i][j] = matrix[i - 1][j - 1];
       } else {
         matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1, // sustitución
-          matrix[i][j - 1] + 1,     // inserción
-          matrix[i - 1][j] + 1      // eliminación
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
         );
       }
     }
@@ -36,17 +36,14 @@ function findBestBookMatch(typedName, books) {
     const cleanBookName = book.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
     const cleanBookAbbr = book.abbreviation.toLowerCase();
     
-    // 1. Coincidencia exacta o de abreviatura
     if (cleanTyped === cleanBookName || cleanTyped === cleanBookAbbr) {
       return book;
     }
     
-    // 2. Empieza con
     if (cleanBookName.startsWith(cleanTyped) || cleanTyped.startsWith(cleanBookName)) {
       return book;
     }
     
-    // 3. Levenshtein + Prefijos
     const dist = getLevenshteinDistance(cleanTyped, cleanBookName);
     
     let prefixMatch = 0;
@@ -68,7 +65,6 @@ function findBestBookMatch(typedName, books) {
   
   if (bestMatch) {
     const baseDist = getLevenshteinDistance(cleanTyped, bestMatch.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
-    // Permitir tolerancia proporcional al tamaño del nombre del libro (máx 3 dist o la mitad del nombre)
     if (baseDist <= Math.max(3, bestMatch.name.length / 2)) {
       return bestMatch;
     }
@@ -81,8 +77,8 @@ const bibleController = {
   // Obtener todas las versiones de la Biblia
   async getVersions(req, res) {
     try {
-      const [versions] = await pool.query('SELECT id, name, abbreviation FROM versions ORDER BY name');
-      res.json(versions);
+      const result = await pool.query('SELECT id, name, abbreviation FROM versions ORDER BY name');
+      res.json(result.rows);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error al obtener versiones de la Biblia.' });
@@ -92,8 +88,8 @@ const bibleController = {
   // Obtener todos los libros
   async getBooks(req, res) {
     try {
-      const [books] = await pool.query('SELECT id, name, abbreviation, testament, book_order FROM books ORDER BY book_order');
-      res.json(books);
+      const result = await pool.query('SELECT id, name, abbreviation, testament, book_order FROM books ORDER BY book_order');
+      res.json(result.rows);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error al obtener los libros bíblicos.' });
@@ -104,8 +100,8 @@ const bibleController = {
   async getChapters(req, res) {
     const { bookId } = req.params;
     try {
-      const [chapters] = await pool.query('SELECT id, number FROM chapters WHERE book_id = ? ORDER BY number', [bookId]);
-      res.json(chapters);
+      const result = await pool.query('SELECT id, number FROM chapters WHERE book_id = $1 ORDER BY number', [bookId]);
+      res.json(result.rows);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error al obtener los capítulos del libro.' });
@@ -115,37 +111,35 @@ const bibleController = {
   // Obtener versículos de un capítulo para una versión específica
   async getVerses(req, res) {
     const { bookId, chapterNumber } = req.params;
-    const versionId = req.query.version_id || 1; // 1 = RVR1960 por defecto
+    const versionId = req.query.version_id || 1;
 
     try {
-      let [verses] = await pool.query(
+      let result = await pool.query(
         `SELECT v.id, v.number, v.text, vt.abbreviation as version, b.name as book_name, c.number as chapter_number 
          FROM verses v 
          JOIN chapters c ON v.chapter_id = c.id 
          JOIN books b ON c.book_id = b.id 
          JOIN versions vt ON v.version_id = vt.id 
-         WHERE b.id = ? AND c.number = ? AND v.version_id = ? 
+         WHERE b.id = $1 AND c.number = $2 AND v.version_id = $3 
          ORDER BY v.number`,
         [bookId, chapterNumber, versionId]
       );
 
-      // Smart Fallback: Si la versión solicitada (ej: NVI) no tiene versículos para este capítulo,
-      // reintentar con la versión 1 (RVR1960) para no dejar al usuario con pantalla vacía.
-      if (verses.length === 0 && Number(versionId) !== 1) {
-        const [fallbackVerses] = await pool.query(
+      if (result.rows.length === 0 && Number(versionId) !== 1) {
+        const fallbackResult = await pool.query(
           `SELECT v.id, v.number, v.text, vt.abbreviation as version, b.name as book_name, c.number as chapter_number 
            FROM verses v 
            JOIN chapters c ON v.chapter_id = c.id 
            JOIN books b ON c.book_id = b.id 
            JOIN versions vt ON v.version_id = vt.id 
-           WHERE b.id = ? AND c.number = ? AND v.version_id = 1 
+           WHERE b.id = $1 AND c.number = $2 AND v.version_id = 1 
            ORDER BY v.number`,
           [bookId, chapterNumber]
         );
-        verses = fallbackVerses;
+        result = fallbackResult;
       }
 
-      res.json(verses);
+      res.json(result.rows);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error al obtener los versículos.' });
@@ -157,7 +151,6 @@ const bibleController = {
     const { q, version_id, book_id, testament, tag, limit = 20, offset = 0 } = req.query;
     
     try {
-      // 1. Verificar si la consulta tiene formato de cita (ej: "Juan 3 16", "juna 3:16", "Génesis 1", "Lucas 2:5-10")
       const citationRegex = /^([1-3]?\s*[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+?)\s+(\d+)(?:(?:\s*:\s*|\s+)(\d+))?(?:\s*[-–]\s*(\d+))?$/;
       const citationMatch = q ? q.trim().match(citationRegex) : null;
       
@@ -168,9 +161,8 @@ const bibleController = {
         const verseNum = citationMatch[3] ? parseInt(citationMatch[3]) : null;
         const endVerseNum = citationMatch[4] ? parseInt(citationMatch[4]) : null;
         
-        // Obtener todos los libros para buscar coincidencia difusa
-        const [allBooks] = await pool.query('SELECT id, name, abbreviation FROM books');
-        const matchedBook = findBestBookMatch(typedBook, allBooks);
+        const allBooksResult = await pool.query('SELECT id, name, abbreviation FROM books');
+        const matchedBook = findBestBookMatch(typedBook, allBooksResult.rows);
         
         if (matchedBook) {
           parsedCitation = {
@@ -183,8 +175,6 @@ const bibleController = {
         }
       }
 
-      // Si es una cita con capítulo (opcionalmente versículo o rango), devolvemos TODO el capítulo
-      // para permitir lectura continua, resaltando el/los versículo(s) buscado(s).
       if (parsedCitation) {
         const effectiveVersionId = version_id ? Number(version_id) : 1;
         const chapterSql = `
@@ -196,23 +186,22 @@ const bibleController = {
             b.name as book_name, 
             b.id as book_id,
             c.number as chapter_number,
-            (SELECT GROUP_CONCAT(t.name) FROM verse_tags vt3 JOIN tags t ON vt3.tag_id = t.id WHERE vt3.verse_id = v.id) as tags
+            (SELECT STRING_AGG(t.name, ',') FROM verse_tags vt3 JOIN tags t ON vt3.tag_id = t.id WHERE vt3.verse_id = v.id) as tags
           FROM verses v
           JOIN chapters c ON v.chapter_id = c.id
           JOIN books b ON c.book_id = b.id
           JOIN versions vt ON v.version_id = vt.id
-          WHERE b.id = ? AND c.number = ? AND v.version_id = ?
+          WHERE b.id = $1 AND c.number = $2 AND v.version_id = $3
           ORDER BY v.number
         `;
 
-        let [verses] = await pool.query(chapterSql, [parsedCitation.book_id, parsedCitation.chapter, effectiveVersionId]);
+        let result = await pool.query(chapterSql, [parsedCitation.book_id, parsedCitation.chapter, effectiveVersionId]);
 
-        // Smart Fallback: si la versión elegida no tiene contenido, usar RVR1960
-        if (verses.length === 0 && effectiveVersionId !== 1) {
-          [verses] = await pool.query(chapterSql, [parsedCitation.book_id, parsedCitation.chapter, 1]);
+        if (result.rows.length === 0 && effectiveVersionId !== 1) {
+          result = await pool.query(chapterSql, [parsedCitation.book_id, parsedCitation.chapter, 1]);
         }
 
-        // Identificar versículos que coinciden con la cita buscada
+        const verses = result.rows;
         const matchedIds = [];
         if (parsedCitation.verse) {
           const start = parsedCitation.verse;
@@ -225,12 +214,11 @@ const bibleController = {
         }
         parsedCitation.matched_verse_ids = matchedIds;
 
-        // Guardar historial de búsqueda
         if (q && q.trim() !== '' && offset == 0) {
           if (req.user) {
-            await pool.query('INSERT INTO search_history (user_id, query) VALUES (?, ?)', [req.user.id, q.trim()]);
+            await pool.query('INSERT INTO search_history (user_id, query) VALUES ($1, $2)', [req.user.id, q.trim()]);
           } else {
-            await pool.query('INSERT INTO search_history (user_id, query) VALUES (NULL, ?)', [q.trim()]);
+            await pool.query('INSERT INTO search_history (user_id, query) VALUES (NULL, $1)', [q.trim()]);
           }
         }
 
@@ -243,14 +231,13 @@ const bibleController = {
         });
       }
 
-      // BÚSQUEDA POR PALABRAS CLAVE Y FILTROS (sin cambios funcionales)
       let queryParts = [];
       let queryParams = [];
 
       if (q && q.trim() !== '') {
         const keywords = q.trim().split(/\s+/);
         keywords.forEach(word => {
-          queryParts.push('v.text LIKE ?');
+          queryParts.push('v.text ILIKE ?');
           queryParams.push(`%${word}%`);
         });
       }
@@ -284,7 +271,7 @@ const bibleController = {
           b.name as book_name, 
           b.id as book_id,
           c.number as chapter_number,
-          (SELECT GROUP_CONCAT(t.name) FROM verse_tags vt3 JOIN tags t ON vt3.tag_id = t.id WHERE vt3.verse_id = v.id) as tags
+          (SELECT STRING_AGG(t.name, ',') FROM verse_tags vt3 JOIN tags t ON vt3.tag_id = t.id WHERE vt3.verse_id = v.id) as tags
         FROM verses v
         JOIN chapters c ON v.chapter_id = c.id
         JOIN books b ON c.book_id = b.id
@@ -298,10 +285,10 @@ const bibleController = {
       sql += ' ORDER BY b.book_order, c.number, v.number';
       
       let countSql = `SELECT COUNT(*) as total FROM (${sql}) as results`;
-      const [countResult] = await pool.query(countSql, queryParams);
-      let total = countResult[0].total;
+      const pgCountSql = toPgSql(countSql);
+      const countResult = await pool.query(pgCountSql, queryParams);
+      let total = parseInt(countResult.rows[0].total);
 
-      // Smart Fallback para búsquedas por palabra clave
       if (total === 0 && version_id && Number(version_id) !== 1) {
         queryParts = [];
         queryParams = [];
@@ -309,7 +296,7 @@ const bibleController = {
         if (q && q.trim() !== '') {
           const keywords = q.trim().split(/\s+/);
           keywords.forEach(word => {
-            queryParts.push('v.text LIKE ?');
+            queryParts.push('v.text ILIKE ?');
             queryParams.push(`%${word}%`);
           });
         }
@@ -339,7 +326,7 @@ const bibleController = {
             b.name as book_name, 
             b.id as book_id,
             c.number as chapter_number,
-            (SELECT GROUP_CONCAT(t.name) FROM verse_tags vt3 JOIN tags t ON vt3.tag_id = t.id WHERE vt3.verse_id = v.id) as tags
+            (SELECT STRING_AGG(t.name, ',') FROM verse_tags vt3 JOIN tags t ON vt3.tag_id = t.id WHERE vt3.verse_id = v.id) as tags
           FROM verses v
           JOIN chapters c ON v.chapter_id = c.id
           JOIN books b ON c.book_id = b.id
@@ -351,27 +338,28 @@ const bibleController = {
         sql += ' ORDER BY b.book_order, c.number, v.number';
         
         countSql = `SELECT COUNT(*) as total FROM (${sql}) as results`;
-        const [fallbackCountResult] = await pool.query(countSql, queryParams);
-        total = fallbackCountResult[0].total;
+        const pgFallbackCountSql = toPgSql(countSql);
+        const fallbackCountResult = await pool.query(pgFallbackCountSql, queryParams);
+        total = parseInt(fallbackCountResult.rows[0].total);
       }
 
       sql += ' LIMIT ? OFFSET ?';
-      const pagedQueryParams = [...queryParams, Number(limit), Number(offset)];
+      queryParams.push(Number(limit), Number(offset));
 
-      const [results] = await pool.query(sql, pagedQueryParams);
+      const pgSql = toPgSql(sql);
+      const result = await pool.query(pgSql, queryParams);
 
-      // Guardar historial de búsqueda
       if (q && q.trim() !== '' && offset == 0) {
         if (req.user) {
-          await pool.query('INSERT INTO search_history (user_id, query) VALUES (?, ?)', [req.user.id, q.trim()]);
+          await pool.query('INSERT INTO search_history (user_id, query) VALUES ($1, $2)', [req.user.id, q.trim()]);
         } else {
-          await pool.query('INSERT INTO search_history (user_id, query) VALUES (NULL, ?)', [q.trim()]);
+          await pool.query('INSERT INTO search_history (user_id, query) VALUES (NULL, $1)', [q.trim()]);
         }
       }
 
       res.json({
         total,
-        results,
+        results: result.rows,
         limit: Number(limit),
         offset: Number(offset),
         parsed_citation: parsedCitation
@@ -394,27 +382,25 @@ const bibleController = {
     try {
       const suggestions = [];
 
-      // 1. Buscar coincidencia con nombres de libros
-      const [books] = await pool.query(
-        'SELECT name, id FROM books WHERE name LIKE ? ORDER BY book_order LIMIT 3',
+      const booksResult = await pool.query(
+        'SELECT name, id FROM books WHERE name ILIKE $1 ORDER BY book_order LIMIT 3',
         [`${searchTerm}%`]
       );
-      books.forEach(b => {
+      booksResult.rows.forEach(b => {
         suggestions.push({ type: 'book', label: b.name, data: { book_id: b.id } });
       });
 
-      // 2. Comprobar si coincide con un patrón tipo "Libro Cap" (Ej: "Génesis 1" o "Juan 3")
       const bookCapRegex = /^([a-zA-ZáéíóúÁÉÍÓÚñÑ\s\d]+?)\s*(\d+)$/;
       const match = searchTerm.match(bookCapRegex);
       if (match) {
         const bookName = match[1].trim();
         const capNum = parseInt(match[2]);
-        const [matchedBooks] = await pool.query(
-          'SELECT name, id FROM books WHERE name LIKE ? ORDER BY book_order LIMIT 1',
+        const matchedBooksResult = await pool.query(
+          'SELECT name, id FROM books WHERE name ILIKE $1 ORDER BY book_order LIMIT 1',
           [`${bookName}%`]
         );
-        if (matchedBooks.length > 0) {
-          const b = matchedBooks[0];
+        if (matchedBooksResult.rows.length > 0) {
+          const b = matchedBooksResult.rows[0];
           suggestions.push({
             type: 'chapter',
             label: `${b.name} ${capNum}`,
@@ -423,26 +409,24 @@ const bibleController = {
         }
       }
 
-      // 3. Buscar etiquetas coincidentes
-      const [tags] = await pool.query(
-        'SELECT name FROM tags WHERE name LIKE ? LIMIT 3',
+      const tagsResult = await pool.query(
+        'SELECT name FROM tags WHERE name ILIKE $1 LIMIT 3',
         [`${searchTerm}%`]
       );
-      tags.forEach(t => {
+      tagsResult.rows.forEach(t => {
         suggestions.push({ type: 'tag', label: `Tema: ${t.name}`, data: { tag: t.name } });
       });
 
-      // 4. Buscar palabras clave populares en el texto bíblico
       if (suggestions.length < 5) {
-        const [verses] = await pool.query(
+        const versesResult = await pool.query(
           `SELECT DISTINCT b.name as book_name, c.number as chapter, v.number as verse 
            FROM verses v 
            JOIN chapters c ON v.chapter_id = c.id
            JOIN books b ON c.book_id = b.id
-           WHERE v.text LIKE ? LIMIT 3`,
+           WHERE v.text ILIKE $1 LIMIT 3`,
           [`%${searchTerm}%`]
         );
-        verses.forEach(v => {
+        versesResult.rows.forEach(v => {
           suggestions.push({
             type: 'verse',
             label: `${v.book_name} ${v.chapter}:${v.verse}`,
@@ -461,14 +445,13 @@ const bibleController = {
   // Versículo del día (consistente para la misma fecha)
   async getVerseOfTheDay(req, res) {
     try {
-      const [countResult] = await pool.query('SELECT COUNT(*) as total FROM verses WHERE version_id = 1');
-      const total = countResult[0].total;
+      const countResult = await pool.query('SELECT COUNT(*) as total FROM verses WHERE version_id = 1');
+      const total = parseInt(countResult.rows[0].total);
 
       if (total === 0) {
         return res.status(404).json({ error: 'No hay versículos disponibles para el Versículo del Día.' });
       }
 
-      // Obtener el día del año como semilla pseudoaleatoria
       const now = new Date();
       const start = new Date(now.getFullYear(), 0, 0);
       const diff = now - start;
@@ -477,7 +460,7 @@ const bibleController = {
 
       const offset = dayOfYear % total;
 
-      const [verses] = await pool.query(
+      const result = await pool.query(
         `SELECT 
           v.id, 
           v.number, 
@@ -491,11 +474,11 @@ const bibleController = {
         JOIN books b ON c.book_id = b.id
         JOIN versions vt ON v.version_id = vt.id
         WHERE v.version_id = 1
-        LIMIT 1 OFFSET ?`,
+        LIMIT 1 OFFSET $1`,
         [offset]
       );
 
-      res.json(verses[0]);
+      res.json(result.rows[0]);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error al obtener el versículo del día.' });
@@ -507,19 +490,19 @@ const bibleController = {
     const { bookId, chapterNumber, verseNumber } = req.params;
 
     try {
-      const [verses] = await pool.query(
+      const result = await pool.query(
         `SELECT v.text, vt.name as version_name, vt.abbreviation as version_abbreviation
          FROM verses v
          JOIN chapters c ON v.chapter_id = c.id
          JOIN versions vt ON v.version_id = vt.id
-         WHERE c.book_id = ? AND c.number = ? AND v.number = ?`,
+         WHERE c.book_id = $1 AND c.number = $2 AND v.number = $3`,
         [bookId, chapterNumber, verseNumber]
       );
       
-      if (verses.length === 0) {
+      if (result.rows.length === 0) {
         return res.status(404).json({ error: 'Versículo no encontrado.' });
       }
-      res.json(verses);
+      res.json(result.rows);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error al comparar el versículo.' });
@@ -529,11 +512,11 @@ const bibleController = {
   // Obtener historial de búsquedas del usuario
   async getSearchHistory(req, res) {
     try {
-      const [history] = await pool.query(
-        'SELECT id, query, created_at FROM search_history WHERE user_id = ? ORDER BY created_at DESC LIMIT 10',
+      const result = await pool.query(
+        'SELECT id, query, created_at FROM search_history WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10',
         [req.user.id]
       );
-      res.json(history);
+      res.json(result.rows);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error al obtener el historial de búsqueda.' });
@@ -543,7 +526,7 @@ const bibleController = {
   // Borrar historial de búsquedas
   async clearSearchHistory(req, res) {
     try {
-      await pool.query('DELETE FROM search_history WHERE user_id = ?', [req.user.id]);
+      await pool.query('DELETE FROM search_history WHERE user_id = $1', [req.user.id]);
       res.json({ message: 'Historial de búsqueda eliminado.' });
     } catch (error) {
       console.error(error);

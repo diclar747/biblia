@@ -1,31 +1,34 @@
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 require('dotenv').config();
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'biblia_buscador',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  charset: 'utf8mb4'
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 // Helper function to test connection
 async function testConnection() {
   try {
-    const connection = await pool.getConnection();
-    console.log('✅ Conexión a la base de datos MySQL establecida correctamente.');
-    connection.release();
+    const client = await pool.connect();
+    console.log('✅ Conexión a la base de datos PostgreSQL establecida correctamente.');
+    client.release();
     return true;
   } catch (error) {
-    console.error('❌ Error al conectar a la base de datos MySQL:', error.message);
+    console.error('❌ Error al conectar a la base de datos PostgreSQL:', error.message);
     return false;
   }
 }
 
+// Helper para convertir placeholders ? de MySQL a $1, $2, ... de PostgreSQL
+function toPgSql(sql) {
+  let index = 0;
+  return sql.replace(/\?/g, () => `$${++index}`);
+}
+
 module.exports = {
   pool,
-  testConnection
+  testConnection,
+  toPgSql
 };

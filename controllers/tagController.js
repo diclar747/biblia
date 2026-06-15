@@ -5,8 +5,8 @@ const tagController = {
   // Obtener todas las etiquetas globales
   async getTags(req, res) {
     try {
-      const [tags] = await pool.query('SELECT id, name FROM tags ORDER BY name');
-      res.json(tags);
+      const result = await pool.query('SELECT id, name FROM tags ORDER BY name');
+      res.json(result.rows);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error al obtener las etiquetas.' });
@@ -24,15 +24,12 @@ const tagController = {
     const tagNameClean = tag_name.trim();
 
     try {
-      // 1. Asegurar que la etiqueta existe en la tabla global
-      await pool.query('INSERT IGNORE INTO tags (name) VALUES (?)', [tagNameClean]);
+      await pool.query('INSERT INTO tags (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [tagNameClean]);
       
-      // 2. Obtener el ID de la etiqueta
-      const [tags] = await pool.query('SELECT id FROM tags WHERE name = ?', [tagNameClean]);
-      const tagId = tags[0].id;
+      const tagsResult = await pool.query('SELECT id FROM tags WHERE name = $1', [tagNameClean]);
+      const tagId = tagsResult.rows[0].id;
 
-      // 3. Vincular la etiqueta con el versículo
-      await pool.query('INSERT IGNORE INTO verse_tags (verse_id, tag_id) VALUES (?, ?)', [verse_id, tagId]);
+      await pool.query('INSERT INTO verse_tags (verse_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [verse_id, tagId]);
 
       res.status(201).json({ 
         message: 'Etiqueta asignada con éxito al versículo.',
@@ -49,8 +46,8 @@ const tagController = {
     const { verseId, tagId } = req.params;
 
     try {
-      const [result] = await pool.query('DELETE FROM verse_tags WHERE verse_id = ? AND tag_id = ?', [verseId, tagId]);
-      if (result.affectedRows === 0) {
+      const result = await pool.query('DELETE FROM verse_tags WHERE verse_id = $1 AND tag_id = $2', [verseId, tagId]);
+      if (result.rowCount === 0) {
         return res.status(404).json({ error: 'Asociación de etiqueta no encontrada.' });
       }
       res.json({ message: 'Etiqueta removida del versículo.' });
@@ -65,14 +62,14 @@ const tagController = {
     const { verseId } = req.params;
 
     try {
-      const [tags] = await pool.query(
+      const result = await pool.query(
         `SELECT t.id, t.name 
          FROM tags t 
          JOIN verse_tags vt ON t.id = vt.tag_id 
-         WHERE vt.verse_id = ?`,
+         WHERE vt.verse_id = $1`,
         [verseId]
       );
-      res.json(tags);
+      res.json(result.rows);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error al obtener etiquetas del versículo.' });
