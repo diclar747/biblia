@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Biblia Online - Encuentra y Estudia las Escrituras</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#4A3F8C">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Biblia Online">
+  <meta name="description" content="Biblia Online con buscador inteligente, versículo del día, cuaderno espiritual, listas personalizadas y Academia de Juegos Bíblicos.">
+  <meta name="keywords" content="biblia, versículos, búsqueda bíblica, juegos bíblicos, estudio bíblico, RVR1960">
+  <meta property="og:title" content="Biblia Online - Encuentra y Estudia las Escrituras">
+  <meta property="og:description" content="Buscador inteligente de la Biblia con versículo del día, notas espirituales y juegos.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/images/icons/icon-512x512.png">
+  <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png">
+  <link rel="mask-icon" href="/images/icons/icon-192x192.png" color="#4A3F8C">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <a href="/" class="logo" id="logo-link">
+      <img src="/images/logo.png" alt="Logo" style="width: 30px; height: 30px; border-radius: 6px; object-fit: cover; margin-right: 2px;">
+      Biblia Online
+    </a>
+
+    <!-- Navegación de secciones -->
+    <div class="nav-links" id="main-nav-links">
+      <a href="#" class="nav-item active" id="nav-search">
+        <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="nav-label">Buscador</span>
+      </a>
+      <a href="#" class="nav-item" id="nav-games">
+        <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4"/><path d="M14 12h4"/><circle cx="8" cy="9" r="1"/><circle cx="16" cy="15" r="1"/></svg>
+        <span class="nav-label">Juegos</span>
+      </a>
+      <a href="#" class="nav-item" id="nav-dashboard">
+        <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="nav-label">Mi Espacio</span>
+      </a>
+    </div>
+
+    <!-- Menú de Usuario -->
+    <div class="user-profile-menu">
+      <div id="user-anonymous-view" class="flex-center">
+        <a href="/login" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">Iniciar Sesión</a>
+      </div>
+      <div id="user-logged-view" class="flex-center hidden">
+        <span id="user-name-display" style="font-weight: 600; color: var(--text-secondary);">Usuario</span>
+        <div id="user-avatar-btn" class="user-avatar">U</div>
+        <a href="/admin" id="admin-panel-link" class="nav-item hidden" style="font-weight: 600; color: var(--danger);">Admin</a>
+        <button id="logout-btn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">Salir</button>
+      </div>
+      
+      <!-- Theme Switcher -->
+      <button id="theme-toggle" class="btn btn-secondary btn-icon" title="Cambiar tema">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <!-- SECCIÓN 1: BUSCADOR PRINCIPAL (HOME) -->
+    <section id="section-search-home" class="home-layout">
+      <div>
+        <h1 class="home-title">Biblia Online</h1>
+        <p class="home-subtitle">Busca palabras clave, temas, libros o personajes de la Biblia al instante</p>
+      </div>
+
+      <!-- Barra de búsqueda estilo Google -->
+      <div class="search-box-wrapper">
+        <div class="search-input-container">
+          <span class="search-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </span>
+          <input type="text" id="main-search-input" class="search-input" placeholder="Buscar versículos..." autocomplete="off">
+          <button id="clear-search" class="clear-search-btn" title="Limpiar búsqueda">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          <button id="toggle-filters" class="filter-toggle-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="21" x2="4" y2="14"></line>
+              <line x1="4" y1="10" x2="4" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12" y2="3"></line>
+              <line x1="20" y1="21" x2="20" y2="16"></line>
+              <line x1="20" y1="12" x2="20" y2="3"></line>
+              <line x1="1" y1="14" x2="7" y2="14"></line>
+              <line x1="9" y1="8" x2="15" y2="8"></line>
+              <line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
+            Filtros
+          </button>
+        </div>
+
+        <!-- Autocompletado de Sugerencias -->
+        <div id="suggestions-box" class="suggestions-dropdown"></div>
+
+        <!-- Filtros Avanzados (Desplegable) -->
+        <div id="advanced-filters" class="glass-panel advanced-filters-panel">
+          <div class="filters-grid">
+            <div class="filter-group">
+              <span class="filter-label">Versión</span>
+              <select id="filter-version" class="filter-select">
+                <!-- Cargado dinámicamente -->
+              </select>
+            </div>
+            <div class="filter-group">
+              <span class="filter-label">Libro</span>
+              <select id="filter-book" class="filter-select">
+                <option value="">Todos los Libros</option>
+                <!-- Cargado dinámicamente -->
+              </select>
+            </div>
+            <div class="filter-group">
+              <span class="filter-label">Testamento</span>
+              <select id="filter-testament" class="filter-select">
+                <option value="">Ambos</option>
+                <option value="Antiguo">Antiguo Testamento</option>
+                <option value="Nuevo">Nuevo Testamento</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <span class="filter-label">Etiqueta/Tema</span>
+              <select id="filter-tag" class="filter-select">
+                <option value="">Todas</option>
+                <!-- Cargado dinámicamente -->
+              </select>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <button id="apply-filters-btn" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85rem;">Aplicar Filtros</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Versículo del Día -->
+      <div id="verse-of-the-day" class="glass-panel verse-of-the-day">
+        <div class="votd-header">
+          <span class="votd-label">Versículo del Día</span>
+          <div class="votd-actions">
+            <button class="action-btn" id="votd-copy" title="Copiar versículo">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+              </svg>
+            </button>
+            <button class="action-btn" id="votd-share" title="Compartir en WhatsApp">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <p class="votd-text" id="votd-text-content">"En el principio creó Dios los cielos y la tierra."</p>
+        <div class="votd-ref">
+          <span id="votd-citation">Génesis 1:1</span>
+          <span id="votd-version" style="font-size: 0.8rem; opacity: 0.8;">RVR1960</span>
+        </div>
+      </div>
+
+      <!-- Búsquedas Recientes (sólo si está logueado) -->
+      <div id="recent-searches-box" style="margin-top: 30px;" class="hidden">
+        <h3 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 10px;">Búsquedas Recientes</h3>
+        <div id="recent-searches-list" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+          <!-- Cargado por JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 2: RESULTADOS Y LECTOR (INTERFAZ DE LECTURA) -->
+    <section id="section-search-results" class="hidden">
+      <!-- Barra superior de búsqueda para resultados -->
+      <div class="glass-panel" style="padding: 16px; margin-bottom: 24px; display: flex; gap: 12px; align-items: center;">
+        <button id="back-to-home-btn" class="btn btn-secondary btn-icon" title="Volver a Inicio">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+        <div style="flex: 1; position: relative;">
+          <input type="text" id="results-search-input" class="form-control" placeholder="Buscar de nuevo..." style="border-radius: var(--radius-sm);">
+          <div id="results-suggestions" class="suggestions-dropdown"></div>
+        </div>
+        <button id="results-version-indicator" class="btn btn-secondary" style="padding: 10px 16px;">RVR1960</button>
+      </div>
+
+      <div class="content-layout">
+        <!-- Columna de Resultados -->
+        <div>
+          <div class="results-header">
+            <h2 id="search-title" style="font-family: var(--font-title); font-weight: 700; font-size: 1.5rem;">Resultados de Búsqueda</h2>
+            <span id="results-count" style="color: var(--text-secondary); font-size: 0.95rem;">0 resultados</span>
+          </div>
+
+          <div id="verses-results-container">
+            <!-- Versículos insertados dinámicamente -->
+          </div>
+
+          <!-- Paginación -->
+          <div id="pagination-container" class="flex-between" style="margin-top: 20px; display: none;">
+            <button id="prev-page-btn" class="btn btn-secondary">Anterior</button>
+            <span id="page-indicator" style="font-weight: 600;">Página 1</span>
+            <button id="next-page-btn" class="btn btn-secondary">Siguiente</button>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Lector Lateral -->
+        <div class="glass-panel reader-panel">
+          <div class="reader-header">
+            <div class="reader-title-bar">
+              <h3 class="reader-title" id="reader-title-text">Lector Bíblico</h3>
+            </div>
+            <div class="reader-selectors">
+              <select id="reader-select-book" class="form-control reader-select">
+                <!-- Libros por JS -->
+              </select>
+              <select id="reader-select-chapter" class="form-control reader-select" style="max-width: 80px;">
+                <!-- Capítulos por JS -->
+              </select>
+              <select id="reader-select-version" class="form-control reader-select" style="max-width: 100px;">
+                <!-- Versiones por JS -->
+              </select>
+            </div>
+            <div class="reader-nav">
+              <button id="reader-prev-chapter" class="btn btn-secondary reader-nav-btn" disabled>
+                ← Capítulo anterior
+              </button>
+              <button id="reader-next-chapter" class="btn btn-secondary reader-nav-btn">
+                Capítulo siguiente →
+              </button>
+            </div>
+          </div>
+          <div class="reader-content" id="reader-content-verses">
+            <p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">Selecciona un capítulo o haz clic en la cita de un resultado para leer el texto en contexto.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 3: PANEL DE USUARIO (DASHBOARD) -->
+    <section id="section-user-dashboard" class="hidden">
+      <div class="glass-panel" style="padding: 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <div>
+          <h2 style="font-family: var(--font-title); font-size: 1.8rem; font-weight: 800;">Mi Espacio Espiritual</h2>
+          <p style="color: var(--text-secondary);">Administra tu diario, notas, favoritos y listas personalizadas.</p>
+        </div>
+        
+        <!-- Configuración rápida de Perfil -->
+        <div class="flex-center">
+          <button id="profile-settings-btn" class="btn btn-secondary flex-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            Configuración
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabs Dashboard -->
+      <div class="dashboard-container">
+        <div class="tab-headers">
+          <button class="tab-btn active" data-tab="tab-favorites">Favoritos</button>
+          <button class="tab-btn" data-tab="tab-notebook">Cuaderno Espiritual</button>
+          <button class="tab-btn" data-tab="tab-lists">Mis Listas</button>
+          <button class="tab-btn" data-tab="tab-image-generator">Tarjetas Bíblicas</button>
+        </div>
+
+        <!-- TAB: FAVORITOS -->
+        <div id="tab-favorites" class="tab-content active">
+          <div id="favorites-container" class="verses-list">
+            <p style="text-align: center; color: var(--text-secondary); margin-top: 30px;">Aún no tienes versículos favoritos. Haz clic en el ícono de corazón <span style="color: var(--danger);">♥</span> al buscar para agregarlos.</p>
+          </div>
+        </div>
+
+        <!-- TAB: CUADERNO ESPIRITUAL -->
+        <div id="tab-notebook" class="tab-content">
+          <div class="flex-between" style="margin-bottom: 20px;">
+            <div style="position: relative; width: 100%; max-width: 320px;">
+              <input type="text" id="search-notes-input" class="form-control" placeholder="Buscar en mis notas..." style="padding-right: 32px;">
+            </div>
+            <button id="new-note-btn" class="btn btn-primary">Nueva Nota / Reflexión</button>
+          </div>
+
+          <div id="notes-list-container" class="notes-grid">
+            <!-- Notas por JS -->
+          </div>
+        </div>
+
+        <!-- TAB: MIS LISTAS -->
+        <div id="tab-lists" class="tab-content">
+          <div class="flex-between" style="margin-bottom: 20px;">
+            <h3 style="font-family: var(--font-title); font-weight: 700; font-size: 1.25rem;">Mis Listas de Versículos</h3>
+            <button id="new-list-btn" class="btn btn-primary">Crear Nueva Lista</button>
+          </div>
+
+          <div id="lists-container" class="lists-grid">
+            <!-- Listas por JS -->
+          </div>
+        </div>
+
+        <!-- TAB: CREADOR DE TARJETAS CON IMÁGENES -->
+        <div id="tab-image-generator" class="tab-content">
+          <div class="card-generator-layout">
+            <!-- Panel de Control a la izquierda -->
+            <div class="glass-panel generator-control-panel">
+              <h3 style="font-family: var(--font-title); font-weight: 700; font-size: 1.25rem; margin-bottom: 8px;">Diseña tu Tarjeta Bíblica</h3>
+              <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px;">Busca un versículo de la Biblia y personaliza su fondo para guardarlo o compartirlo.</p>
+              
+              <!-- Buscador de Versículo -->
+              <div class="form-group" style="position: relative; margin-bottom: 16px;">
+                <label for="generator-search-input" style="font-weight: 600;">1. Busca un Versículo</label>
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" id="generator-search-input" class="form-control" placeholder="Ej: Juan 3:16 o 'salvación'..." autocomplete="off">
+                  <button id="generator-search-btn" class="btn btn-primary" style="padding: 10px 14px;" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  </button>
+                </div>
+                <!-- Autocompletado del Creador de Tarjetas -->
+                <div id="generator-suggestions" class="suggestions-dropdown" style="top: 100%; width: 100%;"></div>
+              </div>
+
+              <!-- Selector de Fondos -->
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label style="font-weight: 600;">2. Selecciona un Fondo</label>
+                <div id="bg-category-filters" class="bg-category-filters"></div>
+                <div id="background-selector-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; margin-top: 6px; max-height: 240px; overflow-y: auto; padding: 4px;">
+                  <!-- Cargado dinámicamente con JS -->
+                </div>
+              </div>
+
+              <!-- Ajustes de Texto -->
+              <div class="filters-grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div class="filter-group">
+                  <span class="filter-label">Tamaño de Letra</span>
+                  <select id="card-font-size" class="filter-select">
+                    <option value="18">Pequeña</option>
+                    <option value="22" selected>Mediana</option>
+                    <option value="28">Grande</option>
+                    <option value="34">Muy Grande</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <span class="filter-label">Alineación</span>
+                  <select id="card-align" class="filter-select">
+                    <option value="left">Izquierda</option>
+                    <option value="center" selected>Centrado</option>
+                    <option value="right">Derecha</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="filters-grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                <div class="filter-group">
+                  <span class="filter-label">Color de Texto</span>
+                  <select id="card-text-color" class="filter-select">
+                    <option value="#ffffff" selected>Blanco</option>
+                    <option value="#fef08a">Dorado Suave</option>
+                    <option value="#1e293b">Oscuro (Azul Slate)</option>
+                    <option value="#a78bfa">Morado Pastel</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <span class="filter-label">Oscuridad de Fondo</span>
+                  <select id="card-overlay-opacity" class="filter-select">
+                    <option value="0">Sin filtro</option>
+                    <option value="0.25">Claro (25%)</option>
+                    <option value="0.45" selected>Medio (45%)</option>
+                    <option value="0.65">Oscuro (65%)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Acciones -->
+              <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button id="download-card-btn" class="btn btn-primary" style="flex: 1; padding: 12px 16px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                  Descargar Imagen
+                </button>
+                <button id="share-card-btn" class="btn btn-secondary" style="padding: 12px 16px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  Compartir
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel de Vista Previa a la derecha -->
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;">
+              <div class="card-preview-container glass-panel">
+                <canvas id="card-canvas" width="600" height="600"></canvas>
+              </div>
+              <p style="font-size: 0.8rem; color: var(--text-secondary); text-align: center;">Nota: La tarjeta se exporta a alta resolución (600x600 px) ideal para estados de WhatsApp y redes sociales.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 4: ACADEMIA DE JUEGOS BÍBLICOS -->
+    <section id="section-games-hub" class="hidden">
+      <!-- Fila de Estadísticas del Jugador -->
+      <div class="games-header-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <!-- Card 1: Rango y Nivel -->
+        <div class="glass-panel" style="padding: 20px; display: flex; align-items: center; gap: 16px;">
+          <div style="font-size: 2.5rem;">👑</div>
+          <div>
+            <h4 id="game-user-range" style="font-family: var(--font-title); font-weight: 700; font-size: 1.15rem; color: var(--accent);">Aprendiz Bíblico</h4>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">Rango Espiritual</p>
+            <div style="font-weight: bold; font-size: 0.95rem; margin-top: 4px;">Nivel: <span id="game-user-level">1</span></div>
+          </div>
+        </div>
+
+        <!-- Card 2: XP y Progreso -->
+        <div class="glass-panel" style="padding: 20px;">
+          <div class="flex-between" style="margin-bottom: 6px;">
+            <span style="font-weight: 600; font-size: 0.85rem;">Progreso del Nivel</span>
+            <span id="game-user-xp" style="font-weight: 700; font-size: 0.85rem; color: var(--accent);">0 XP</span>
+          </div>
+          <!-- Barra de Progreso -->
+          <div style="width: 100%; height: 12px; background: var(--bg-tertiary); border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color);">
+            <div id="game-user-xp-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent), #c084fc); transition: var(--transition);"></div>
+          </div>
+          <p id="game-next-level-xp" style="color: var(--text-muted); font-size: 0.72rem; margin-top: 6px; text-align: right;">Siguiente nivel en 50 XP</p>
+        </div>
+
+        <!-- Card 3: Racha y Coronas -->
+        <div class="glass-panel" style="padding: 20px; display: flex; justify-content: space-around; align-items: center;">
+          <div style="text-align: center;">
+            <div class="streak-active" style="font-size: 1.8rem;">🔥</div>
+            <div id="game-user-streak" style="font-weight: 700; font-size: 1.1rem; margin-top: 2px;">0</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">Racha</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 1.8rem;">🥇</div>
+            <div id="game-user-crowns" style="font-weight: 700; font-size: 1.1rem; margin-top: 2px;">0</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">Coronas</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 1.8rem;">🎯</div>
+            <div id="game-user-rank" style="font-weight: 700; font-size: 1.1rem; margin-top: 2px;">-</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">Ranking</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diseño de Dos Columnas: Modos de Juego a la izquierda, Leaderboard a la derecha -->
+      <div class="games-hub-layout">
+        <!-- Columna de Selección de Juegos o la Arena de Juego -->
+        <div>
+          <!-- PANEL PRINCIPAL: SELECCIÓN DE MODOS DE JUEGO -->
+          <div id="game-selection-panel">
+            <h2 style="font-family: var(--font-title); font-size: 1.6rem; font-weight: 800; margin-bottom: 6px;">Academia de Juegos Bíblicos</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">Pon a prueba tus conocimientos, acumula coronas y sube en el ranking de sabiduría.</p>
+
+            <div class="lists-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;">
+              <!-- Modo 1: Acertijos -->
+              <div class="glass-panel list-card card-riddles" onclick="startNewGame('riddles')">
+                <div style="font-size: 2rem; margin-bottom: 8px;">🧩</div>
+                <h3 class="list-card-title" style="font-size: 1.15rem;">Acertijos Bíblicos</h3>
+                <p class="list-card-desc" style="font-size: 0.82rem; height: 36px; margin: 4px 0 10px 0;">Resuelve adivinanzas de personajes y eventos históricos.</p>
+                <div class="flex-between"><span class="badge badge-user">Fácil / Medio</span> <span style="font-weight:bold; font-size:0.75rem; color:var(--accent);">+15 XP</span></div>
+              </div>
+
+              <!-- Modo 2: Adivinar Personaje -->
+              <div class="glass-panel list-card card-characters" onclick="startNewGame('characters')">
+                <div style="font-size: 2rem; margin-bottom: 8px;">👤</div>
+                <h3 class="list-card-title" style="font-size: 1.15rem;">Adivina el Personaje</h3>
+                <p class="list-card-desc" style="font-size: 0.82rem; height: 36px; margin: 4px 0 10px 0;">Descubre quién es revelando pistas una a una progresivamente.</p>
+                <div class="flex-between"><span class="badge badge-user">Progresivo</span> <span style="font-weight:bold; font-size:0.75rem; color:var(--accent);">+15 XP</span></div>
+              </div>
+
+              <!-- Modo 3: Completar Versículos -->
+              <div class="glass-panel list-card card-verses" onclick="startNewGame('verses')">
+                <div style="font-size: 2rem; margin-bottom: 8px;">✏️</div>
+                <h3 class="list-card-title" style="font-size: 1.15rem;">Completar Versículo</h3>
+                <p class="list-card-desc" style="font-size: 0.82rem; height: 36px; margin: 4px 0 10px 0;">Elige la palabra que completa correctamente el texto sagrado.</p>
+                <div class="flex-between"><span class="badge badge-user">Duolingo-Style</span> <span style="font-weight:bold; font-size:0.75rem; color:var(--accent);">+10 XP</span></div>
+              </div>
+
+              <!-- Modo 4: Ordenar Versículo -->
+              <div class="glass-panel list-card card-order-verses" onclick="startNewGame('order_verses')">
+                <div style="font-size: 2rem; margin-bottom: 8px;">🔤</div>
+                <h3 class="list-card-title" style="font-size: 1.15rem;">Ordenar Versículos</h3>
+                <p class="list-card-desc" style="font-size: 0.82rem; height: 36px; margin: 4px 0 10px 0;">Ordena las palabras mezcladas para reconstruir el pasaje.</p>
+                <div class="flex-between"><span class="badge badge-user">Fácil</span> <span style="font-weight:bold; font-size:0.75rem; color:var(--accent);">+15 XP</span></div>
+              </div>
+
+              <!-- Modo 5: Historias Interactivas -->
+              <div class="glass-panel list-card card-stories" onclick="startNewGame('stories')">
+                <div style="font-size: 2rem; margin-bottom: 8px;">📚</div>
+                <h3 class="list-card-title" style="font-size: 1.15rem;">Historias Bíblicas</h3>
+                <p class="list-card-desc" style="font-size: 0.82rem; height: 36px; margin: 4px 0 10px 0;">Lee relatos históricos y responde a preguntas sobre ellos.</p>
+                <div class="flex-between"><span class="badge badge-user">Kahoot-Style</span> <span style="font-weight:bold; font-size:0.75rem; color:var(--accent);">+25 XP</span></div>
+              </div>
+
+              <!-- Modo 6: Verdadero o Falso -->
+              <div class="glass-panel list-card card-true-false" onclick="startNewGame('true_false')">
+                <div style="font-size: 2rem; margin-bottom: 8px;">⚖️</div>
+                <h3 class="list-card-title" style="font-size: 1.15rem;">Verdadero o Falso</h3>
+                <p class="list-card-desc" style="font-size: 0.82rem; height: 36px; margin: 4px 0 10px 0;">Decide rápidamente si la declaración bíblica es verdadera o falsa.</p>
+                <div class="flex-between"><span class="badge badge-user">Veloz</span> <span style="font-weight:bold; font-size:0.75rem; color:var(--accent);">+10 XP</span></div>
+              </div>
+
+              <!-- Modo 7: Encuentra el Libro -->
+              <div class="glass-panel list-card card-books" onclick="startNewGame('books')">
+                <div style="font-size: 2rem; margin-bottom: 8px;">📖</div>
+                <h3 class="list-card-title" style="font-size: 1.15rem;">Encuentra el Libro</h3>
+                <p class="list-card-desc" style="font-size: 0.82rem; height: 36px; margin: 4px 0 10px 0;">¿En qué libro ocurrieron los milagros y las historias más famosas?</p>
+                <div class="flex-between"><span class="badge badge-user">Buscador</span> <span style="font-weight:bold; font-size:0.75rem; color:var(--accent);">+10 XP</span></div>
+              </div>
+
+              <!-- Modo 8: Juego de Memoria -->
+              <div class="glass-panel list-card card-memory" onclick="startNewGame('memory')">
+                <div style="font-size: 2rem; margin-bottom: 8px;">🧠</div>
+                <h3 class="list-card-title" style="font-size: 1.15rem;">Juego de Memoria</h3>
+                <p class="list-card-desc" style="font-size: 0.82rem; height: 36px; margin: 4px 0 10px 0;">Combina personajes con sus hazañas y milagros correspondientes.</p>
+                <div class="flex-between"><span class="badge badge-user">Memoria</span> <span style="font-weight:bold; font-size:0.75rem; color:var(--accent);">+20 XP</span></div>
+              </div>
+
+              <!-- Modo 9: Desafío Diario -->
+              <div class="glass-panel list-card card-daily" onclick="startNewGame('daily')" style="border: 2px solid var(--warning); background-color: rgba(245, 158, 11, 0.03);">
+                <div style="font-size: 2rem; margin-bottom: 8px;">☀️</div>
+                <h3 class="list-card-title" style="font-size: 1.15rem; color: var(--warning);">Desafío Diario</h3>
+                <p class="list-card-desc" style="font-size: 0.82rem; height: 36px; margin: 4px 0 10px 0;">Resuelve el acertijo y desafío especial de hoy (¡Doble XP!).</p>
+                <div class="flex-between"><span class="badge" style="background-color:rgba(245, 158, 11, 0.15); color:var(--warning);">Diario</span> <span style="font-weight:bold; font-size:0.75rem; color:var(--warning);">¡Doble XP!</span></div>
+              </div>
+
+              <!-- Modo 10: Modo Cronómetro -->
+              <div class="glass-panel list-card card-timer" onclick="startNewGame('timer')" style="border: 2px solid var(--danger); background-color: rgba(239, 108, 108, 0.03);">
+                <div style="font-size: 2rem; margin-bottom: 8px;">⏱️</div>
+                <h3 class="list-card-title" style="font-size: 1.15rem; color: var(--danger);">Modo Cronómetro</h3>
+                <p class="list-card-desc" style="font-size: 0.82rem; height: 36px; margin: 4px 0 10px 0;">Responde tantas preguntas como puedas antes de que el tiempo acabe.</p>
+                <div class="flex-between"><span class="badge badge-admin">Veloz (30s)</span> <span style="font-weight:bold; font-size:0.75rem; color:var(--danger);">Contrarreloj</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ARENA DE JUEGO (SE MUESTRA AL EMPEZAR UN JUEGO) -->
+          <div id="game-play-panel" class="hidden">
+            <div class="glass-panel" style="padding: 24px; position: relative; min-height: 400px; display: flex; flex-direction: column;">
+              <!-- Botón Salir -->
+              <button onclick="exitActiveGame()" class="modal-close-btn" style="position: absolute; top: 20px; right: 20px; font-size: 1.8rem; z-index:10;">&times;</button>
+              
+              <!-- Encabezado de la Arena: Vidas y Barra de Progreso -->
+              <div class="flex-between" style="margin-bottom: 20px; padding-right: 30px;">
+                <div id="game-lives-container" style="font-size: 1.3rem; display: flex; gap: 4px;">
+                  <!-- Vidas (Corazones) -->
+                  ❤️ ❤️ ❤️
+                </div>
+                <div id="game-timer-container" class="hidden" style="font-weight: 700; font-size: 1rem; color: var(--danger);">
+                  ⏱️ <span id="game-timer-value">30</span>s
+                </div>
+                <div style="flex: 1; max-width: 50%; height: 12px; background: var(--bg-tertiary); border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); margin-left: 20px;">
+                  <div id="game-quiz-progress-bar" style="width: 0%; height: 100%; background-color: var(--success); transition: var(--transition);"></div>
+                </div>
+              </div>
+
+              <!-- Contenedor de Mascota Leonel -->
+              <div id="game-mascot-container" class="mascot-container">
+                <!-- Se cargará por JS -->
+              </div>
+
+              <!-- Ventana de Preguntas y Contenido Principal -->
+              <div id="game-question-zone" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 24px;">
+                <!-- Dinámico por JS -->
+              </div>
+
+              <!-- Zona de Entrada / Respuestas -->
+              <div id="game-answer-zone" style="margin-bottom: 24px; width: 100%;">
+                <!-- Opciones múltiples o entrada de texto dinámica por JS -->
+              </div>
+
+              <!-- Barra inferior de acciones (Comprobar y Continuar) -->
+              <div class="flex-between" style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+                <span id="game-feedback-msg" style="font-weight: 600; font-size: 1.05rem;"></span>
+                <button id="game-action-btn" class="btn btn-primary" style="padding: 12px 24px;">Comprobar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANTALLA DE RESULTADOS (FIN DEL JUEGO) -->
+          <div id="game-results-panel" class="hidden">
+            <div class="glass-panel" style="padding: 32px; text-align: center; position: relative;">
+              <canvas id="game-confetti-canvas" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index: 50;"></canvas>
+              
+              <div style="font-size: 4rem; margin-bottom: 12px;">🏆</div>
+              <h2 style="font-family: var(--font-title); font-size: 1.8rem; font-weight: 800; margin-bottom: 8px;">¡Desafío Completado!</h2>
+              <p style="color: var(--text-secondary); margin-bottom: 20px;" id="game-results-summary">Has acertado las preguntas del juego.</p>
+              
+              <!-- Recompensas ganadas -->
+              <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 24px;">
+                <div class="glass-panel" style="padding: 12px 24px; text-align: center;">
+                  <span style="font-size: 1.5rem; display: block;">⚡</span>
+                  <strong style="font-size: 1.25rem; color: var(--accent);" id="game-results-xp">+0 XP</strong>
+                  <span style="font-size: 0.78rem; color: var(--text-secondary); display: block;">Experiencia</span>
+                </div>
+                <div class="glass-panel" style="padding: 12px 24px; text-align: center;">
+                  <span style="font-size: 1.5rem; display: block;">🥇</span>
+                  <strong style="font-size: 1.25rem; color: var(--warning);" id="game-results-crowns">+0</strong>
+                  <span style="font-size: 0.78rem; color: var(--text-secondary); display: block;">Coronas</span>
+                </div>
+              </div>
+
+              <!-- IA Bíblica: Explicador Teológico -->
+              <div class="glass-panel" style="padding: 20px; text-align: left; margin-bottom: 24px; border-left: 4px solid var(--accent); background-color: var(--bg-primary);">
+                <div class="flex-center" style="margin-bottom: 8px;">
+                  <span style="font-size: 1.2rem;">🤖</span>
+                  <strong style="font-family: var(--font-title); font-size: 0.95rem; color: var(--accent);" id="game-results-ai-name">IA Bíblica (Entrenador de Sabiduría)</strong>
+                </div>
+                <p id="game-results-ai-explanation" style="font-size: 0.92rem; line-height: 1.5; color: var(--text-primary);"></p>
+                <p id="game-results-ai-motivation" style="font-size: 0.85rem; font-style: italic; color: var(--text-secondary); margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 8px;"></p>
+              </div>
+
+              <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="backToGameSelection()" class="btn btn-primary" style="padding: 12px 24px;">Volver a la Academia</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Ranking y Logros -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <!-- Panel de Medallas / Logros -->
+          <div class="glass-panel" style="padding: 20px;">
+            <h3 style="font-family: var(--font-title); font-weight: 700; font-size: 1.15rem; margin-bottom: 12px;">Mis Logros Espirituales</h3>
+            <div id="game-achievements-list" style="display: flex; flex-direction: column; gap: 10px;">
+              <!-- Logros dinámicos en JS -->
+            </div>
+          </div>
+
+          <!-- Panel de Clasificación (Ranking) -->
+          <div class="glass-panel" style="padding: 20px;">
+            <h3 style="font-family: var(--font-title); font-weight: 700; font-size: 1.15rem; margin-bottom: 12px;">Tabla de Posiciones</h3>
+            <div id="game-leaderboard-list" style="display: flex; flex-direction: column; gap: 10px;">
+              <!-- Líderes dinámicos en JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 5: AUTENTICACIÓN (LOGIN/REGISTRO SPA) -->
+    <section id="section-auth" class="auth-page hidden">
+      <!-- Login Card -->
+      <div id="login-card" class="glass-panel auth-card">
+        <div class="auth-header">
+          <h2 class="auth-title">Iniciar Sesión</h2>
+          <p style="color: var(--text-secondary); margin-top: 4px;">Accede a tu historial, favoritos y notas</p>
+        </div>
+
+        <div id="login-error" style="color: var(--danger); margin-bottom: 12px; font-size: 0.9rem; text-align: center; display: none;"></div>
+
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-email">Correo Electrónico</label>
+            <input type="email" id="login-email" class="form-control" placeholder="ejemplo@correo.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Contraseña</label>
+            <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Ingresar</button>
+        </form>
+
+        <p class="auth-switch">
+          ¿No tienes una cuenta? <a href="#" id="show-register-btn">Regístrate</a>
+        </p>
+      </div>
+
+      <!-- Register Card -->
+      <div id="register-card" class="glass-panel auth-card hidden">
+        <div class="auth-header">
+          <h2 class="auth-title">Crear Cuenta</h2>
+          <p style="color: var(--text-secondary); margin-top: 4px;">Crea tu cuaderno espiritual hoy</p>
+        </div>
+
+        <div id="register-error" style="color: var(--danger); margin-bottom: 12px; font-size: 0.9rem; text-align: center; display: none;"></div>
+
+        <form id="register-form">
+          <div class="form-group">
+            <label for="register-name">Nombre Completo</label>
+            <input type="text" id="register-name" class="form-control" placeholder="Tu nombre" required autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label for="register-email">Correo Electrónico</label>
+            <input type="email" id="register-email" class="form-control" placeholder="ejemplo@correo.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="register-password">Contraseña</label>
+            <input type="password" id="register-password" class="form-control" placeholder="Mínimo 6 caracteres" required autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label for="register-version">Versión Bíblica Preferida</label>
+            <select id="register-version" class="form-control">
+              <!-- Cargadas dinámicamente -->
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Registrarse</button>
+        </form>
+
+        <p class="auth-switch">
+          ¿Ya tienes cuenta? <a href="#" id="show-login-btn">Inicia Sesión</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: AGREGAR/EDITAR NOTA -->
+  <div id="note-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="note-modal-title" class="modal-title">Escribir Nota Espiritual</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="note-form">
+        <input type="hidden" id="note-id-field">
+        <div class="form-group">
+          <label for="note-title-field">Título / Asunto</label>
+          <input type="text" id="note-title-field" class="form-control" placeholder="Ej: Reflexión sobre la Paz de Dios" required>
+        </div>
+        <div class="form-group">
+          <label for="note-content-field">Reflexión / Notas de Predicación</label>
+          <textarea id="note-content-field" class="form-control" rows="8" placeholder="Escribe aquí lo que Dios ha puesto en tu corazón..." required></textarea>
+        </div>
+
+        <!-- Versículos asociados a la nota -->
+        <div class="form-group">
+          <label>Versículos Vinculados</label>
+          <div id="note-linked-verses-list" style="margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 6px;">
+            <!-- Versículos seleccionados por JS -->
+          </div>
+          <p style="font-size: 0.75rem; color: var(--text-secondary);">Para vincular un versículo, haz clic en el botón de nota 📝 en los resultados de búsqueda.</p>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary modal-cancel-btn">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Reflexión</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR/EDITAR LISTA -->
+  <div id="list-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="list-modal-title" class="modal-title">Crear Lista Personalizada</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="list-form">
+        <input type="hidden" id="list-id-field">
+        <div class="form-group">
+          <label for="list-name-field">Nombre de la Lista</label>
+          <input type="text" id="list-name-field" class="form-control" placeholder="Ej: Promesas para momentos de Miedo" required>
+        </div>
+        <div class="form-group">
+          <label for="list-desc-field">Descripción (Opcional)</label>
+          <textarea id="list-desc-field" class="form-control" rows="3" placeholder="Ej: Versículos bíblicos de ánimo que me confortan cuando tengo temor."></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary modal-cancel-btn">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Lista</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: AGREGAR VERSÍCULO A LISTAS -->
+  <div id="add-to-list-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Guardar en mis Listas</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <input type="hidden" id="add-to-list-verse-id">
+      <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px;">Selecciona la lista donde deseas guardar el versículo:</p>
+      
+      <div id="user-lists-checkboxes" style="max-height: 200px; overflow-y: auto; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;">
+        <!-- Listas dinámicas con checkbox -->
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary modal-cancel-btn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ETIQUETAR VERSÍCULO -->
+  <div id="tag-verse-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Etiquetar Versículo</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <input type="hidden" id="tag-verse-id">
+      
+      <div class="form-group">
+        <label for="new-tag-input">Escribe una etiqueta</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="new-tag-input" class="form-control" placeholder="Ej: Sanidad, Fortaleza">
+          <button id="add-tag-submit-btn" class="btn btn-primary">Asignar</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Etiquetas actuales del versículo</label>
+        <div id="current-verse-tags-list" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
+          <!-- JS -->
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary modal-cancel-btn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: COMPARAR VERSIONES -->
+  <div id="compare-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="compare-modal-title">Comparar Versículo</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div id="compare-modal-content" style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- Lista de traducciones -->
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary modal-cancel-btn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VER DETALLES DE LISTA GUARDADA -->
+  <div id="view-list-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" id="view-list-title">Detalles de Lista</h3>
+          <p id="view-list-desc" style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px;"></p>
+        </div>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      
+      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <button id="download-list-pdf" class="btn btn-secondary flex-center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
+          </svg>
+          Descargar PDF
+        </button>
+      </div>
+
+      <div id="view-list-verses-container" class="verses-list" style="max-height: 400px; overflow-y: auto;">
+        <!-- Versículos cargados por JS -->
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary modal-cancel-btn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIGURACIÓN DE PERFIL -->
+  <div id="profile-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Configuración de Perfil</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="profile-form" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="profile-name">Nombre</label>
+          <input type="text" id="profile-name" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="profile-email">Correo Electrónico (No modificable)</label>
+          <input type="email" id="profile-email" class="form-control" disabled>
+        </div>
+        <div class="form-group">
+          <label for="profile-image-input">Foto de Perfil</label>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 4px;">
+            <div id="profile-image-preview-container" style="position: relative; width: 60px; height: 60px; border-radius: 50%; overflow: hidden; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); flex-shrink: 0;">
+              <span id="profile-image-placeholder" style="font-size: 1.5rem; color: var(--text-secondary); font-weight: 700;">U</span>
+              <img id="profile-image-preview" src="" alt="Foto" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+            </div>
+            <input type="file" id="profile-image-input" accept="image/*" class="form-control" style="flex: 1; padding: 6px 10px; font-size: 0.85rem;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="profile-version">Versión Bíblica por Defecto</label>
+          <select id="profile-version" class="form-control">
+            <!-- Versiones cargadas dinámicamente -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="profile-password">Nueva Contraseña (Dejar en blanco para conservar la actual)</label>
+          <input type="password" id="profile-password" class="form-control" placeholder="••••••••">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary modal-cancel-btn">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION (Móvil) -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <a href="#" class="nav-item active" id="bottom-nav-search">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span class="nav-label">Buscador</span>
+    </a>
+    <a href="#" class="nav-item" id="bottom-nav-games">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4"/><path d="M14 12h4"/><circle cx="8" cy="9" r="1"/><circle cx="16" cy="15" r="1"/></svg>
+      <span class="nav-label">Juegos</span>
+    </a>
+    <!-- Invitado: Mi Espacio redirige a login -->
+    <a href="#" class="nav-item" id="bottom-nav-login">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-label">Mi Espacio</span>
+    </a>
+    
+    <!-- Autenticado: Perfil + Salir -->
+    <a href="#" class="nav-item hidden" id="bottom-nav-profile">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-label">Perfil</span>
+    </a>
+    <a href="#" class="nav-item hidden" id="bottom-nav-logout" style="color: var(--danger) !important;">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span class="nav-label">Salir</span>
+    </a>
+  </nav>
+
+  <!-- PWA INSTALL BANNER -->
+  <div id="pwa-install-banner" class="pwa-install-banner">
+    <div class="pwa-install-content">
+      <img src="/images/icons/icon-192x192.png" alt="Biblia Online" class="pwa-install-icon">
+      <div class="pwa-install-text">
+        <strong>Instalar Biblia Online</strong>
+        <span>Accede rápido desde tu pantalla de inicio</span>
+      </div>
+    </div>
+    <div class="pwa-install-actions">
+      <button id="pwa-install-dismiss" class="pwa-install-btn pwa-install-btn-text">Ahora no</button>
+      <button id="pwa-install-confirm" class="pwa-install-btn pwa-install-btn-primary">Instalar</button>
+    </div>
+  </div>
+
+  <!-- MODAL: COMPARTIR EN REDES SOCIALES -->
+  <div id="share-verse-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Compartir Pasaje</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      
+      <div style="margin-bottom: 20px; text-align: center;">
+        <p id="share-modal-text" style="font-size: 1.1rem; font-style: italic; margin-bottom: 10px; color: var(--text-primary);"></p>
+        <p id="share-modal-citation" style="font-weight: 700; color: var(--accent); font-size: 0.95rem;"></p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+        <a id="share-link-whatsapp" href="#" target="_blank" class="btn btn-secondary" style="display: flex; justify-content: flex-start; gap: 12px; font-weight: 600;">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.73-1.45L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.002-2.637-1.03-5.115-2.908-6.995-1.878-1.88-4.354-2.912-6.995-2.914-5.442 0-9.867 4.42-9.871 9.863-.001 1.748.457 3.454 1.328 4.966L1.936 21.8l4.71-1.237z"/></svg>
+          Compartir en WhatsApp
+        </a>
+        <a id="share-link-facebook" href="#" target="_blank" class="btn btn-secondary" style="display: flex; justify-content: flex-start; gap: 12px; font-weight: 600;">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          Compartir en Facebook
+        </a>
+        <a id="share-link-telegram" href="#" target="_blank" class="btn btn-secondary" style="display: flex; justify-content: flex-start; gap: 12px; font-weight: 600;">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0C5.356 0 0 5.356 0 11.944 0 18.532 5.356 24 11.944 24c6.588 0 11.944-5.356 11.944-12.056C23.888 5.356 18.532 0 11.944 0zm5.82 8.328l-2.023 9.537c-.15.68-.558.847-1.127.527l-3.08-2.272-1.487 1.43c-.164.164-.3.3-.615.3l.22-3.13 5.7-5.15c.247-.22-.054-.34-.38-.124l-7.045 4.43-3.037-.95c-.66-.207-.674-.66.137-.977l11.87-4.577c.55-.207 1.03.125.822 1.25z"/></svg>
+          Compartir en Telegram
+        </a>
+        <a id="share-link-twitter" href="#" target="_blank" class="btn btn-secondary" style="display: flex; justify-content: flex-start; gap: 12px; font-weight: 600;">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Compartir en X (Twitter)
+        </a>
+        <button id="share-btn-copy" class="btn btn-primary" style="display: flex; justify-content: flex-start; gap: 12px; font-weight: 600;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          Copiar Enlace de Búsqueda
+        </button>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary modal-cancel-btn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cargar jsPDF para exportación a PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- Lógica JavaScript modular -->
+  <script src="/js/auth.js"></script>
+  <script src="/js/notebook.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/games.js"></script>
+  <script>
+    // Configuración general de modales
+    document.querySelectorAll('.modal-close-btn, .modal-cancel-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.modal-overlay').forEach(modal => modal.classList.remove('active'));
+      });
+    });
+  </script>
+</body>
+</html>

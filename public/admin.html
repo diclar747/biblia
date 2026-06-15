@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consola de Administración - Biblia Online</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#4A3F8C">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Panel de administración de Biblia Online.">
+  <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png">
+  <link rel="mask-icon" href="/images/icons/icon-192x192.png" color="#4A3F8C">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <a href="/" class="logo">
+      <img src="/images/logo.png" alt="Logo" style="width: 30px; height: 30px; border-radius: 6px; object-fit: cover; margin-right: 2px;">
+      Biblia Online Admin
+    </a>
+    <div class="nav-links">
+      <a href="/" class="nav-item">Ir al Buscador</a>
+      <span id="admin-user-name" style="font-weight: 600; color: var(--text-secondary);">Admin</span>
+      <button id="logout-btn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">Cerrar Sesión</button>
+      <button id="theme-toggle" class="btn btn-secondary btn-icon" title="Cambiar tema">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <div style="margin-bottom: 24px;">
+      <h1 style="font-family: var(--font-title); font-size: 2.2rem; font-weight: 800;">Panel del Administrador</h1>
+      <p style="color: var(--text-secondary);">Gestiona el contenido, los usuarios registrados y realiza importaciones masivas.</p>
+    </div>
+
+    <!-- Admin Grid -->
+    <div class="admin-grid">
+
+      <!-- Columna 1: Importador -->
+      <div class="glass-panel admin-card">
+        <h2 style="font-family: var(--font-title); font-weight: 700; font-size: 1.4rem; margin-bottom: 14px;" class="flex-center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"></path>
+          </svg>
+          Importar Versículos
+        </h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+          Sube un archivo en formato <strong>JSON</strong> o <strong>CSV</strong> para cargar nuevos versículos.
+          El formato CSV debe tener los campos: <code>book, chapter, verse, version, text</code>.
+        </p>
+
+        <!-- Drag and drop area -->
+        <div id="file-drop-area" class="file-drop-area">
+          <svg class="file-drop-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+            <path d="M12 8v8M8 12h8"></path>
+          </svg>
+          <p class="file-drop-text">Arrastra tu archivo aquí o haz clic para seleccionar</p>
+          <input type="file" id="file-input" style="display: none;" accept=".json,.csv">
+        </div>
+
+        <button id="import-btn" class="btn btn-primary" style="width: 100%;" disabled>Procesar e Importar Archivo</button>
+        
+        <div id="import-status" class="import-status-box"></div>
+      </div>
+
+      <!-- Columna 2: Agregar Versión -->
+      <div class="glass-panel admin-card">
+        <h2 style="font-family: var(--font-title); font-weight: 700; font-size: 1.4rem; margin-bottom: 14px;" class="flex-center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          Registrar Nueva Versión
+        </h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+          Define una versión para la base de datos (por ejemplo, Biblia Latinoamericana - BL).
+        </p>
+
+        <form id="add-version-form">
+          <div class="form-group">
+            <label for="version-name">Nombre de la Versión</label>
+            <input type="text" id="version-name" class="form-control" placeholder="Ej: Biblia Latinoamericana" required>
+          </div>
+          <div class="form-group">
+            <label for="version-abbr">Abreviación</label>
+            <input type="text" id="version-abbr" class="form-control" placeholder="Ej: BL" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Agregar Versión</button>
+        </form>
+
+        <div id="version-status" style="margin-top: 10px; font-size: 0.9rem; text-align: center;"></div>
+      </div>
+
+    </div>
+
+    <!-- Sección inferior: Listas -->
+    <div style="margin-top: 30px;" class="glass-panel admin-card">
+      <h2 style="font-family: var(--font-title); font-weight: 700; font-size: 1.4rem; margin-bottom: 14px;" class="flex-center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        Usuarios del Sistema
+      </h2>
+      
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Correo Electrónico</th>
+              <th>Rol</th>
+              <th>Fecha de Registro</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <!-- Cargados dinámicamente -->
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--text-secondary);">Cargando usuarios...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/admin.js"></script>
+  <script>
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+
+    themeToggle.addEventListener('click', () => {
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    });
+  </script>
+</body>
+</html>

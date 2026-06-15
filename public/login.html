@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar Sesión - Biblia Online</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#4A3F8C">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Inicia sesión en Biblia Online para acceder a tu cuaderno espiritual, favoritos y juegos bíblicos.">
+  <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png">
+  <link rel="mask-icon" href="/images/icons/icon-192x192.png" color="#4A3F8C">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <a href="/" class="logo">
+      <img src="/images/logo.png" alt="Logo" style="width: 30px; height: 30px; border-radius: 6px; object-fit: cover; margin-right: 2px;">
+      Biblia Online
+    </a>
+    <div class="nav-links">
+      <a href="/" class="nav-item">Volver al Buscador</a>
+      <button id="theme-toggle" class="btn btn-secondary btn-icon" title="Cambiar tema">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Auth Page -->
+  <main class="auth-page">
+    
+    <!-- Login Card -->
+    <div id="login-card" class="glass-panel auth-card">
+      <div class="auth-header">
+        <h2 class="auth-title">Iniciar Sesión</h2>
+        <p style="color: var(--text-secondary); margin-top: 4px;">Accede a tu historial, favoritos y notas</p>
+      </div>
+
+      <div id="login-error" style="color: var(--danger); margin-bottom: 12px; font-size: 0.9rem; text-align: center; display: none;"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="login-email">Correo Electrónico</label>
+          <input type="email" id="login-email" class="form-control" placeholder="ejemplo@correo.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="login-password">Contraseña</label>
+          <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Ingresar</button>
+      </form>
+
+      <p class="auth-switch">
+        ¿No tienes una cuenta? <a href="#" id="show-register-btn">Regístrate</a>
+      </p>
+    </div>
+
+    <!-- Register Card -->
+    <div id="register-card" class="glass-panel auth-card hidden">
+      <div class="auth-header">
+        <h2 class="auth-title">Crear Cuenta</h2>
+        <p style="color: var(--text-secondary); margin-top: 4px;">Crea tu cuaderno espiritual hoy</p>
+      </div>
+
+      <div id="register-error" style="color: var(--danger); margin-bottom: 12px; font-size: 0.9rem; text-align: center; display: none;"></div>
+
+      <form id="register-form">
+        <div class="form-group">
+          <label for="register-name">Nombre Completo</label>
+          <input type="text" id="register-name" class="form-control" placeholder="Tu nombre" required autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label for="register-email">Correo Electrónico</label>
+          <input type="email" id="register-email" class="form-control" placeholder="ejemplo@correo.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="register-password">Contraseña</label>
+          <input type="password" id="register-password" class="form-control" placeholder="Mínimo 6 caracteres" required autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label for="register-version">Versión Bíblica Preferida</label>
+          <select id="register-version" class="form-control">
+            <!-- Cargadas dinámicamente -->
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Registrarse</button>
+      </form>
+
+      <p class="auth-switch">
+        ¿Ya tienes cuenta? <a href="#" id="show-login-btn">Inicia Sesión</a>
+      </p>
+    </div>
+
+  </main>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    // Toggle login/register cards
+    const loginCard = document.getElementById('login-card');
+    const registerCard = document.getElementById('register-card');
+    const showRegisterBtn = document.getElementById('show-register-btn');
+    const showLoginBtn = document.getElementById('show-login-btn');
+
+    showRegisterBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      loginCard.classList.add('hidden');
+      registerCard.classList.remove('hidden');
+      document.title = 'Registrarse - Biblia Online';
+    });
+
+    showLoginBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      registerCard.classList.add('hidden');
+      loginCard.classList.remove('hidden');
+      document.title = 'Iniciar Sesión - Biblia Online';
+    });
+
+    // Theme toggle logic
+    const themeToggle = document.getElementById('theme-toggle');
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+
+    themeToggle.addEventListener('click', () => {
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    });
+  </script>
+</body>
+</html>

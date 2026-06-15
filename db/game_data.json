@@ -1,0 +1,251 @@
+{
+  "riddles": [
+    {
+      "id": 1,
+      "riddle": "Fui tragado por un gran pez por desobedecer a Dios. ¿Quién soy?",
+      "answer": "Jonás",
+      "hint": "Intentó huir a Tarsis en lugar de ir a Nínive.",
+      "category": "Profetas"
+    },
+    {
+      "id": 2,
+      "riddle": "Construí un arca gigante de madera de gofer para salvar a mi familia y animales del diluvio. ¿Quién soy?",
+      "answer": "Noé",
+      "hint": "Llovió durante 40 días y 40 noches.",
+      "category": "Antiguo Testamento"
+    },
+    {
+      "id": 3,
+      "riddle": "Derribé a un gigante guerrero filisteo usando solamente una honda y una piedra. ¿Quién soy?",
+      "answer": "David",
+      "hint": "Más tarde me convertí en el rey más famoso de Israel.",
+      "category": "Reyes"
+    },
+    {
+      "id": 4,
+      "riddle": "Negué a Jesús tres veces antes de que cantara el gallo, tal como Él lo predijo. ¿Quién soy?",
+      "answer": "Pedro",
+      "hint": "También soy conocido como Cefas y era pescador de Galilea.",
+      "category": "Apóstoles"
+    },
+    {
+      "id": 5,
+      "riddle": "Caminé sobre las aguas tempestuosas del mar de Galilea hacia Jesús, pero al sentir miedo comencé a hundirme. ¿Quién soy?",
+      "answer": "Pedro",
+      "hint": "Jesús me extendió la mano y me dijo: '¡Hombre de poca fe! ¿Por qué dudaste?'",
+      "category": "Apóstoles"
+    },
+    {
+      "id": 6,
+      "riddle": "Fui arrojado a un foso lleno de leones hambrientos por orar a Dios tres veces al día, pero Dios cerró la boca de los leones. ¿Quién soy?",
+      "answer": "Daniel",
+      "hint": "Fui consejero en Babilonia e interpreté los sueños del rey Nabucodonosor.",
+      "category": "Profetas"
+    },
+    {
+      "id": 7,
+      "riddle": "Fui vendida por mis hermanos y llevada a Egipto, donde pasé de la cárcel a ser el segundo al mando de todo el imperio tras interpretar los sueños del Faraón. ¿Quién soy?",
+      "answer": "José",
+      "hint": "Mi padre Jacob me regaló una túnica de muchos colores.",
+      "category": "Antiguo Testamento"
+    }
+  ],
+  "characters": [
+    {
+      "id": 1,
+      "name": "David",
+      "clues": [
+        "Nací en Belén y fui el menor de ocho hermanos, cuidando las ovejas de mi padre Isaí.",
+        "Tenía un talento especial para la música y tocaba el arpa para calmar el espíritu del rey Saúl.",
+        "Fui ungido rey por el profeta Samuel y derroté al gigante filisteo Goliat con una honda."
+      ],
+      "category": "Reyes"
+    },
+    {
+      "id": 2,
+      "name": "Moisés",
+      "clues": [
+        "Fui rescatado de las aguas del río Nilo dentro de una cesta por la hija del Faraón.",
+        "Dios me habló a través de una zarza ardiente que no se consumía en el monte Horeb.",
+        "Guié al pueblo de Israel fuera de la esclavitud de Egipto y abrí el Mar Rojo con mi vara."
+      ],
+      "category": "Antiguo Testamento"
+    },
+    {
+      "id": 3,
+      "name": "Pablo",
+      "clues": [
+        "Originalmente me llamaba Saulo de Tarso y perseguía con ferocidad a los primeros cristianos.",
+        "Tuve un encuentro con Jesús resucitado camino a Damasco, donde quedé ciego por una luz brillante.",
+        "Me convertí en el apóstol de los gentiles y escribí la mayor parte de las cartas del Nuevo Testamento."
+      ],
+      "category": "Apóstoles"
+    },
+    {
+      "id": 4,
+      "name": "Sansón",
+      "clues": [
+        "Mi nacimiento fue anunciado por un ángel y fui consagrado como nazareo desde el vientre.",
+        "Fui juez de Israel y derroté a mil filisteos usando únicamente la quijada de un asno.",
+        "Mi gran fuerza física residía en mi cabello, el cual fue cortado tras ser traicionado por Dalila."
+      ],
+      "category": "Antiguo Testamento"
+    }
+  ],
+  "verses": [
+    {
+      "id": 1,
+      "incomplete": "Todo lo puedo en Cristo que me __________.",
+      "options": ["guía", "fortalece", "ama", "protege"],
+      "correct": "fortalece",
+      "citation": "Filipenses 4:13",
+      "category": "Fe"
+    },
+    {
+      "id": 2,
+      "incomplete": "Porque de tal manera amó Dios al mundo, que ha dado a su Hijo __________, para que todo aquel que en él cree, no se pierda, mas tenga vida eterna.",
+      "options": ["primogénito", "amado", "unigénito", "elegido"],
+      "correct": "unigénito",
+      "citation": "Juan 3:16",
+      "category": "Amor"
+    },
+    {
+      "id": 3,
+      "incomplete": "El Señor es mi __________; nada me faltará.",
+      "options": ["escudo", "pastor", "castillo", "salvador"],
+      "correct": "pastor",
+      "citation": "Salmos 23:1",
+      "category": "Sabiduría"
+    },
+    {
+      "id": 4,
+      "incomplete": "Y sabemos que a los que aman a Dios, todas las cosas les ayudan a __________.",
+      "options": ["bien", "mal", "triunfar", "crecer"],
+      "correct": "bien",
+      "citation": "Romanos 8:28",
+      "category": "Fe"
+    }
+  ],
+  "order_verses": [
+    {
+      "id": 1,
+      "words": ["Jehová", "es", "mi", "pastor", "nada", "me", "faltará"],
+      "correct": "Jehová es mi pastor nada me faltará",
+      "citation": "Salmo 23:1"
+    },
+    {
+      "id": 2,
+      "words": ["Dios", "es", "amor"],
+      "correct": "Dios es amor",
+      "citation": "1 Juan 4:8"
+    },
+    {
+      "id": 3,
+      "words": ["principio", "En", "el", "creó", "Dios", "los", "cielos"],
+      "correct": "En el principio creó Dios los cielos",
+      "citation": "Génesis 1:1"
+    }
+  ],
+  "stories": [
+    {
+      "id": 1,
+      "title": "David y Goliat",
+      "story": "El ejército filisteo se enfrentaba a Israel. Un gigante llamado Goliat desafió a los israelitas a un combate singular. Ningún soldado se atrevía a pelear. David, un joven pastor, aceptó el desafío confiando en Dios. Rechazó la armadura pesada del rey Saúl y se dirigió al gigante con su honda y cinco piedras lisas de un arroyo. De un solo tiro, hirió a Goliat en la frente con una piedra, derribándolo y dándole la victoria a Israel.",
+      "questions": [
+        {
+          "question": "¿Qué arma utilizó David para derribar al gigante Goliat?",
+          "options": ["Una espada dorada", "Una honda y una piedra", "Una lanza de bronce", "Un arco y flecha"],
+          "correct": "Una honda y una piedra"
+        },
+        {
+          "question": "¿Quién era el rey de Israel que ofreció su armadura a David?",
+          "options": ["Saúl", "Salomón", "Ezequías", "Herodes"],
+          "correct": "Saúl"
+        },
+        {
+          "question": "¿Cuántas piedras lisas tomó David del arroyo para el combate?",
+          "options": ["Una", "Tres", "Cinco", "Diez"],
+          "correct": "Cinco"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "El Arca de Noé",
+      "story": "Al ver la maldad de la humanidad en la Tierra, Dios decidió enviar un gran diluvio para limpiar la creación, pero halló gracia en Noé, un hombre justo y perfecto. Dios le ordenó construir una inmensa arca de madera de gofer y llevar dentro a su esposa, a sus tres hijos (Sem, Cam y Jafet) con sus esposas, y parejas de cada especie animal. Llovió por 40 días y 40 noches, cubriendo hasta las montañas, hasta que las aguas retrocedieron y el arca descansó sobre los montes de Ararat, donde Dios puso un arcoíris en el cielo como promesa.",
+      "questions": [
+        {
+          "question": "¿De qué tipo de madera le ordenó Dios a Noé construir el arca?",
+          "options": ["Pino", "Madera de gofer", "Cedro del Líbano", "Roble"],
+          "correct": "Madera de gofer"
+        },
+        {
+          "question": "¿Cuál de los siguientes NO era un hijo de Noé?",
+          "options": ["Sem", "Cam", "Jafet", "Isaac"],
+          "correct": "Isaac"
+        },
+        {
+          "question": "¿Qué señal puso Dios en las nubes como símbolo de su pacto eterno?",
+          "options": ["Una paloma blanca", "Un arcoíris", "Una estrella brillante", "Un rayo"],
+          "correct": "Un arcoíris"
+        }
+      ]
+    }
+  ],
+  "true_false": [
+    {
+      "id": 1,
+      "statement": "Moisés construyó el arca para salvar a los animales del diluvio.",
+      "correct": false,
+      "explanation": "Noé fue quien construyó el arca por mandato de Dios. Moisés vivió siglos después y guió al pueblo de Israel en el Éxodo."
+    },
+    {
+      "id": 2,
+      "statement": "Pablo fue uno de los doce apóstoles originales que caminaron con Jesús durante su ministerio terrenal.",
+      "correct": false,
+      "explanation": "Pablo no estuvo entre los doce discípulos originales. Él conoció a Jesús resucitado en una visión camino a Damasco y fue comisionado apóstol posteriormente."
+    },
+    {
+      "id": 3,
+      "statement": "Sansón perdió su gran fuerza sobrenatural cuando le cortaron el cabello.",
+      "correct": true,
+      "explanation": "Sansón tenía un pacto nazareo con Dios, cuyo símbolo externo era no cortarse el cabello. Al ser rapado tras caer en los engaños de Dalila, el Señor se apartó de él y perdió su fuerza."
+    },
+    {
+      "id": 4,
+      "statement": "Jesucristo nació en la ciudad de Jerusalén.",
+      "correct": false,
+      "explanation": "Jesús nació en Belén de Judea, cumpliendo la profecía de Miqueas, aunque creció en Nazaret."
+    }
+  ],
+  "books": [
+    {
+      "id": 1,
+      "question": "¿En qué libro de la Biblia se narra la historia de la Creación y el Diluvio Universal?",
+      "options": ["Éxodo", "Génesis", "Apocalipsis", "Mateo"],
+      "correct": "Génesis"
+    },
+    {
+      "id": 2,
+      "question": "¿Qué libro del Nuevo Testamento describe la historia del nacimiento de la iglesia primitiva y los viajes misioneros de Pablo?",
+      "options": ["Hechos", "Romanos", "Apocalipsis", "Lucas"],
+      "correct": "Hechos"
+    },
+    {
+      "id": 3,
+      "question": "¿Cuál es el libro más largo del Antiguo Testamento que consiste en una gran colección de cánticos, oraciones y alabanzas?",
+      "options": ["Proverbios", "Salmos", "Isaías", "Cantares"],
+      "correct": "Salmos"
+    }
+  ],
+  "memory": [
+    {"id": 1, "text": "Moisés", "match": "Abrió el Mar Rojo"},
+    {"id": 2, "text": "Abrió el Mar Rojo", "match": "Moisés"},
+    {"id": 3, "text": "David", "match": "Derrotó a Goliat"},
+    {"id": 4, "text": "Derrotó a Goliat", "match": "David"},
+    {"id": 5, "text": "Noé", "match": "Construyó el Arca"},
+    {"id": 6, "text": "Construyó el Arca", "match": "Noé"},
+    {"id": 7, "text": "Jonás", "match": "Tragado por gran pez"},
+    {"id": 8, "text": "Tragado por gran pez", "match": "Jonás"}
+  ]
+}
