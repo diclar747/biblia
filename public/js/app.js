@@ -28,8 +28,31 @@ document.addEventListener('DOMContentLoaded', () => {
   // Registrar Service Worker para PWA
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/service-worker.js')
-      .then(reg => console.log('🚀 PWA: Service Worker registrado con éxito:', reg.scope))
+      .then(reg => {
+        console.log('🚀 PWA: Service Worker registrado con éxito:', reg.scope);
+        // Forzar activación inmediata si hay una nueva versión esperando
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('[PWA] Nueva versión disponible. Activando...');
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          }
+        });
+      })
       .catch(err => console.error('❌ PWA: Fallo al registrar Service Worker:', err));
+
+    // Refrescar la página cuando el nuevo service worker tome el control
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
   }
 
   // Cargar elementos iniciales
