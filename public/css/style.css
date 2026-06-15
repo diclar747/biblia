@@ -546,7 +546,8 @@ header {
   border-bottom: none;
 }
 
-.suggestion-item:hover {
+.suggestion-item:hover,
+.suggestion-item.suggestion-active {
   background: var(--bg-tertiary);
 }
 
@@ -565,6 +566,11 @@ header {
   border-radius: var(--radius-pill);
   background: var(--primary-glow);
   color: var(--primary);
+}
+
+.suggestion-highlight {
+  font-weight: 700;
+  color: var(--accent);
 }
 
 /* Filtros avanzados */

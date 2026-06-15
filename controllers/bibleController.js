@@ -25,27 +25,37 @@ function getLevenshteinDistance(a, b) {
   return matrix[b.length][a.length];
 }
 
+// Normaliza un texto para comparaciones sin acentos ni mayúsculas
+function normalizeText(str) {
+  return str
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '');
+}
+
 // Encontrar la mejor coincidencia de libro con tolerancia a errores ortográficos
 function findBestBookMatch(typedName, books) {
-  const cleanTyped = typedName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
-  
+  const cleanTyped = normalizeText(typedName);
+
   let bestMatch = null;
   let minScore = 999;
-  
+
   for (const book of books) {
-    const cleanBookName = book.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
-    const cleanBookAbbr = book.abbreviation.toLowerCase();
-    
+    const cleanBookName = normalizeText(book.name);
+    const cleanBookAbbr = normalizeText(book.abbreviation);
+
     if (cleanTyped === cleanBookName || cleanTyped === cleanBookAbbr) {
       return book;
     }
-    
+
     if (cleanBookName.startsWith(cleanTyped) || cleanTyped.startsWith(cleanBookName)) {
       return book;
     }
-    
+
     const dist = getLevenshteinDistance(cleanTyped, cleanBookName);
-    
+
     let prefixMatch = 0;
     for (let i = 0; i < Math.min(cleanTyped.length, cleanBookName.length); i++) {
       if (cleanTyped[i] === cleanBookName[i]) {
@@ -54,22 +64,22 @@ function findBestBookMatch(typedName, books) {
         break;
       }
     }
-    
+
     const score = dist - prefixMatch;
-    
+
     if (score < minScore) {
       minScore = score;
       bestMatch = book;
     }
   }
-  
+
   if (bestMatch) {
-    const baseDist = getLevenshteinDistance(cleanTyped, bestMatch.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+    const baseDist = getLevenshteinDistance(cleanTyped, normalizeText(bestMatch.name));
     if (baseDist <= Math.max(3, bestMatch.name.length / 2)) {
       return bestMatch;
     }
   }
-  
+
   return null;
 }
 
@@ -382,33 +392,82 @@ const bibleController = {
     try {
       const suggestions = [];
 
-      const booksResult = await pool.query(
-        'SELECT name, id FROM books WHERE name ILIKE $1 ORDER BY book_order LIMIT 3',
-        [`${searchTerm}%`]
+      // Cargar todos los libros una sola vez para búsqueda con/sin acentos y para citas
+      const allBooksResult = await pool.query(
+        'SELECT id, name, abbreviation, book_order FROM books ORDER BY book_order'
       );
-      booksResult.rows.forEach(b => {
+      const allBooks = allBooksResult.rows;
+      const normalizedSearch = normalizeText(searchTerm);
+
+      // 1. Buscar coincidencia con nombres/abreviaturas de libros (ignora acentos y espacios)
+      const matchingBooks = allBooks.filter(b => {
+        const normName = normalizeText(b.name);
+        const normAbbr = normalizeText(b.abbreviation);
+        return normName.startsWith(normalizedSearch) || normAbbr.startsWith(normalizedSearch);
+      }).slice(0, 3);
+      matchingBooks.forEach(b => {
         suggestions.push({ type: 'book', label: b.name, data: { book_id: b.id } });
       });
 
-      const bookCapRegex = /^([a-zA-ZáéíóúÁÉÍÓÚñÑ\s\d]+?)\s*(\d+)$/;
-      const match = searchTerm.match(bookCapRegex);
-      if (match) {
-        const bookName = match[1].trim();
-        const capNum = parseInt(match[2]);
-        const matchedBooksResult = await pool.query(
-          'SELECT name, id FROM books WHERE name ILIKE $1 ORDER BY book_order LIMIT 1',
-          [`${bookName}%`]
-        );
-        if (matchedBooksResult.rows.length > 0) {
-          const b = matchedBooksResult.rows[0];
-          suggestions.push({
-            type: 'chapter',
-            label: `${b.name} ${capNum}`,
-            data: { book_id: b.id, chapter: capNum }
-          });
+      // 2. Detectar cita parcial: "Marcos 5", "Marcos 5:", "Marcos 5:4", "Marcos 5:4-6"
+      const citationRegex = /^([1-3]?\s*[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+?)\s+(\d+):?\s*(\d+)?(?:\s*[-–]\s*(\d+))?$/;
+      const citationMatch = searchTerm.match(citationRegex);
+
+      if (citationMatch) {
+        const typedBook = citationMatch[1].trim();
+        const chapterNum = parseInt(citationMatch[2]);
+        const verseNum = citationMatch[3] ? parseInt(citationMatch[3]) : null;
+        const endVerseNum = citationMatch[4] ? parseInt(citationMatch[4]) : null;
+
+        const matchedBook = findBestBookMatch(typedBook, allBooks);
+
+        if (matchedBook) {
+          if (verseNum && endVerseNum) {
+            // Sugerir rango de versículos
+            suggestions.unshift({
+              type: 'verse',
+              label: `${matchedBook.name} ${chapterNum}:${verseNum}-${endVerseNum}`,
+              data: { book_id: matchedBook.id, chapter: chapterNum, verse: verseNum, end_verse: endVerseNum }
+            });
+          } else if (verseNum) {
+            // Sugerir versículo exacto
+            suggestions.unshift({
+              type: 'verse',
+              label: `${matchedBook.name} ${chapterNum}:${verseNum}`,
+              data: { book_id: matchedBook.id, chapter: chapterNum, verse: verseNum }
+            });
+          } else {
+            // Sugerir capítulo
+            suggestions.unshift({
+              type: 'chapter',
+              label: `${matchedBook.name} ${chapterNum}`,
+              data: { book_id: matchedBook.id, chapter: chapterNum }
+            });
+
+            // Si escribió "Libro Cap:", sugerir los primeros versículos del capítulo
+            if (searchTerm.includes(':')) {
+              const versesResult = await pool.query(
+                `SELECT v.number as verse
+                 FROM verses v
+                 JOIN chapters c ON v.chapter_id = c.id
+                 WHERE c.book_id = $1 AND c.number = $2 AND v.version_id = 1
+                 ORDER BY v.number
+                 LIMIT 5`,
+                [matchedBook.id, chapterNum]
+              );
+              versesResult.rows.forEach(v => {
+                suggestions.push({
+                  type: 'verse',
+                  label: `${matchedBook.name} ${chapterNum}:${v.verse}`,
+                  data: { book_id: matchedBook.id, chapter: chapterNum, verse: v.verse }
+                });
+              });
+            }
+          }
         }
       }
 
+      // 3. Buscar etiquetas coincidentes
       const tagsResult = await pool.query(
         'SELECT name FROM tags WHERE name ILIKE $1 LIMIT 3',
         [`${searchTerm}%`]
@@ -417,6 +476,7 @@ const bibleController = {
         suggestions.push({ type: 'tag', label: `Tema: ${t.name}`, data: { tag: t.name } });
       });
 
+      // 4. Buscar palabras clave populares en el texto bíblico
       if (suggestions.length < 5) {
         const versesResult = await pool.query(
           `SELECT DISTINCT b.name as book_name, c.number as chapter, v.number as verse 

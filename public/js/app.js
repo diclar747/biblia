@@ -461,10 +461,26 @@ function setupEventListeners() {
   const mainSearchInput = document.getElementById('main-search-input');
   if (mainSearchInput) {
     mainSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        moveSuggestionHighlight(1, 'suggestions-box');
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        moveSuggestionHighlight(-1, 'suggestions-box');
+        return;
+      }
       if (e.key === 'Enter') {
         e.preventDefault();
+        if (!acceptActiveSuggestion('suggestions-box')) {
+          hideSuggestions();
+          triggerSearch(mainSearchInput.value);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
         hideSuggestions();
-        triggerSearch(mainSearchInput.value);
       }
     });
 
@@ -479,10 +495,26 @@ function setupEventListeners() {
   const resultsSearchInput = document.getElementById('results-search-input');
   if (resultsSearchInput) {
     resultsSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        moveSuggestionHighlight(1, 'results-suggestions');
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        moveSuggestionHighlight(-1, 'results-suggestions');
+        return;
+      }
       if (e.key === 'Enter') {
         e.preventDefault();
+        if (!acceptActiveSuggestion('results-suggestions')) {
+          hideSuggestions();
+          triggerSearch(resultsSearchInput.value);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
         hideSuggestions();
-        triggerSearch(resultsSearchInput.value);
       }
     });
 
@@ -991,12 +1023,85 @@ async function executeSearchQuery() {
   }
 }
 
+// Estado compartido para navegación de sugerencias
+let activeSuggestionIndex = -1;
+let currentSuggestions = [];
+let currentSuggestionQuery = '';
+
 // Manejar Autocompletado mientras se escribe
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function highlightMatch(text, query) {
+  if (!query || !text) return escapeHTML(text || '');
+  const words = query
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(w => w.length > 0)
+    .sort((a, b) => b.length - a.length);
+  if (words.length === 0) return escapeHTML(text);
+
+  const normalizedText = text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  const mask = new Array(normalizedText.length).fill(false);
+  words.forEach(word => {
+    const re = new RegExp(escapeRegExp(word), 'gi');
+    let m;
+    while ((m = re.exec(normalizedText)) !== null) {
+      for (let i = m.index; i < m.index + m[0].length; i++) {
+        if (i < mask.length) mask[i] = true;
+      }
+      if (m[0].length === 0) break;
+    }
+  });
+
+  const codePoints = Array.from(text);
+  const origIndices = [];
+  codePoints.forEach((ch, origIdx) => {
+    const normCh = ch
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    for (let k = 0; k < normCh.length; k++) {
+      origIndices.push(origIdx);
+    }
+  });
+
+  let result = '';
+  let inHighlight = false;
+  for (let origIdx = 0; origIdx < codePoints.length; origIdx++) {
+    const positions = [];
+    for (let i = 0; i < origIndices.length; i++) {
+      if (origIndices[i] === origIdx) positions.push(i);
+    }
+    const isMasked = positions.length > 0 && positions.some(p => mask[p]);
+    if (isMasked && !inHighlight) {
+      result += '<span class="suggestion-highlight">';
+      inHighlight = true;
+    } else if (!isMasked && inHighlight) {
+      result += '</span>';
+      inHighlight = false;
+    }
+    result += escapeHTML(codePoints[origIdx]);
+  }
+  if (inHighlight) result += '</span>';
+  return result;
+}
+
 function handleAutocomplete(value, dropdownId) {
   const box = document.getElementById(dropdownId);
   if (!box) return;
 
   if (suggestionTimeout) clearTimeout(suggestionTimeout);
+  activeSuggestionIndex = -1;
+  currentSuggestions = [];
+  currentSuggestionQuery = value ? value.trim() : '';
 
   if (!value || value.trim() === '') {
     box.style.display = 'none';
@@ -1007,54 +1112,14 @@ function handleAutocomplete(value, dropdownId) {
     try {
       const res = await fetchWithRetry(`/api/bible/suggestions?q=${encodeURIComponent(value.trim())}`);
       const suggestions = await res.json();
+      currentSuggestions = suggestions;
 
       if (suggestions.length === 0) {
         box.style.display = 'none';
         return;
       }
 
-      box.innerHTML = '';
-      suggestions.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'suggestion-item';
-        
-        let typeBadge = '';
-        if (item.type === 'book') typeBadge = 'Libro';
-        if (item.type === 'chapter') typeBadge = 'Capítulo';
-        if (item.type === 'verse') typeBadge = 'Versículo';
-        if (item.type === 'tag') typeBadge = 'Tema';
-
-        div.innerHTML = `
-          <svg class="suggestion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <span>${escapeHTML(item.label)}</span>
-          <span class="suggestion-badge">${typeBadge}</span>
-        `;
-
-        div.addEventListener('click', () => {
-          box.style.display = 'none';
-          document.getElementById('main-search-input').value = item.label;
-          document.getElementById('results-search-input').value = item.label;
-          
-          if (item.type === 'book' || item.type === 'chapter') {
-            // Abrir directamente en el lector
-            const bookId = item.data.book_id;
-            const cap = item.data.chapter || 1;
-            
-            // Switch views
-            document.getElementById('section-search-home').classList.add('hidden');
-            document.getElementById('section-search-results').classList.remove('hidden');
-            
-            document.getElementById('reader-select-book').value = bookId;
-            loadReaderChapters(bookId, cap);
-          } else {
-            // Es una búsqueda por etiqueta o palabra clave
-            triggerSearch(item.label.replace('Tema: ', ''));
-          }
-        });
-
-        box.appendChild(div);
-      });
-
+      renderSuggestions(box, suggestions, dropdownId);
       box.style.display = 'block';
     } catch (error) {
       console.error(error);
@@ -1062,11 +1127,99 @@ function handleAutocomplete(value, dropdownId) {
   }, 250);
 }
 
+function renderSuggestions(box, suggestions, dropdownId) {
+  box.innerHTML = '';
+  suggestions.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = 'suggestion-item';
+    div.dataset.index = index;
+    
+    let typeBadge = '';
+    if (item.type === 'book') typeBadge = 'Libro';
+    if (item.type === 'chapter') typeBadge = 'Capítulo';
+    if (item.type === 'verse') typeBadge = 'Versículo';
+    if (item.type === 'tag') typeBadge = 'Tema';
+
+    div.innerHTML = `
+      <svg class="suggestion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>${highlightMatch(item.label, currentSuggestionQuery)}</span>
+      <span class="suggestion-badge">${typeBadge}</span>
+    `;
+
+    div.addEventListener('click', () => {
+      selectSuggestion(item, dropdownId);
+    });
+
+    div.addEventListener('mouseenter', () => {
+      activeSuggestionIndex = index;
+      highlightSuggestion(box);
+    });
+
+    box.appendChild(div);
+  });
+}
+
+function selectSuggestion(item, dropdownId) {
+  hideSuggestions();
+  const query = item.label.replace('Tema: ', '');
+  document.getElementById('main-search-input').value = query;
+  document.getElementById('results-search-input').value = query;
+
+  if (item.type === 'book') {
+    // Abrir el libro directamente en el lector, capítulo 1
+    document.getElementById('section-search-home').classList.add('hidden');
+    document.getElementById('section-search-results').classList.remove('hidden');
+    syncReaderWithCitation(item.data.book_id, 1);
+  } else {
+    // Capítulos, versículos, rangos y temas se resuelven como búsqueda
+    triggerSearch(query);
+  }
+}
+
+function highlightSuggestion(box) {
+  const items = box.querySelectorAll('.suggestion-item');
+  items.forEach((el, idx) => {
+    if (idx === activeSuggestionIndex) {
+      el.classList.add('suggestion-active');
+    } else {
+      el.classList.remove('suggestion-active');
+    }
+  });
+}
+
+function moveSuggestionHighlight(direction, dropdownId) {
+  const box = document.getElementById(dropdownId);
+  if (!box || box.style.display === 'none') return;
+
+  const items = box.querySelectorAll('.suggestion-item');
+  if (items.length === 0) return;
+
+  activeSuggestionIndex += direction;
+  if (activeSuggestionIndex < 0) activeSuggestionIndex = items.length - 1;
+  if (activeSuggestionIndex >= items.length) activeSuggestionIndex = 0;
+
+  highlightSuggestion(box);
+  items[activeSuggestionIndex].scrollIntoView({ block: 'nearest' });
+}
+
+function acceptActiveSuggestion(dropdownId) {
+  const box = document.getElementById(dropdownId);
+  if (!box || box.style.display === 'none') return false;
+
+  if (activeSuggestionIndex >= 0 && currentSuggestions[activeSuggestionIndex]) {
+    selectSuggestion(currentSuggestions[activeSuggestionIndex], dropdownId);
+    return true;
+  }
+  return false;
+}
+
 function hideSuggestions() {
   const box1 = document.getElementById('suggestions-box');
   const box2 = document.getElementById('results-suggestions');
   if (box1) box1.style.display = 'none';
   if (box2) box2.style.display = 'none';
+  activeSuggestionIndex = -1;
+  currentSuggestions = [];
 }
 
 // Abrir capítulo desde cita en el lector lateral

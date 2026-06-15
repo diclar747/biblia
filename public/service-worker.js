@@ -1,8 +1,8 @@
-// Biblia Online — Service Worker v2
+// Biblia Online — Service Worker v4
 // Estrategia híbrida: Cache-first para assets, Network-first para API
 
-const CACHE_NAME = 'biblia-online-cache-v3';
-const API_CACHE_NAME = 'biblia-online-api-v3';
+const CACHE_NAME = 'biblia-online-cache-v4';
+const API_CACHE_NAME = 'biblia-online-api-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -51,6 +51,13 @@ self.addEventListener('activate', (event) => {
       );
     }).then(() => self.clients.claim())
   );
+});
+
+// Escuchar mensajes del cliente para activación inmediata
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Fetch: Estrategia inteligente por tipo de petición
