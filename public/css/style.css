@@ -921,6 +921,7 @@ textarea.form-control {
 .reader-verse-actions {
   justify-content: flex-end;
   margin-top: 6px;
+  opacity: 1;
 }
 
 .reader-nav {
@@ -1077,6 +1078,43 @@ textarea.form-control {
 
 .chapter-verse-actions {
   margin-top: 10px;
+}
+
+/* Menú desplegable de acciones por versículo */
+.verse-actions-menu-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.verse-menu-toggle {
+  padding: 6px 8px;
+}
+
+.verse-actions-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 100;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 170px;
+  padding: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.verse-actions-dropdown .action-btn {
+  justify-content: flex-start;
+  width: 100%;
+  border: none;
+  padding: 8px 10px;
+}
+
+.verse-actions-dropdown .action-btn:hover {
+  background: var(--bg-tertiary);
 }
 
 /* ========================================================================

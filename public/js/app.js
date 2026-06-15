@@ -610,10 +610,15 @@ function setupEventListeners() {
     });
   });
 
-  // Cerrar sugerencias al hacer clic fuera o presionar Escape
+  // Cerrar sugerencias y menús de versículos al hacer clic fuera
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.search-box-wrapper') && !e.target.closest('#results-search-input')) {
       hideSuggestions();
+    }
+    if (!e.target.closest('.verse-actions-menu-wrapper')) {
+      document.querySelectorAll('.verse-actions-dropdown').forEach(m => {
+        m.style.display = 'none';
+      });
     }
   });
   
@@ -798,42 +803,67 @@ function triggerSearch(query) {
   executeSearchQuery();
 }
 
-// Genera el HTML de la barra de acciones para un versículo
+// Genera el HTML del menú de acciones para un versículo (icono de 3 barras)
 function getVerseActionsHTML(v, citation) {
+  const menuId = `verse-menu-${v.id}`;
   return `
-    <button class="action-btn" onclick="toggleFavorite(this, ${v.id})" title="Marcar Favorito">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-      Favorito
-    </button>
-    <button class="action-btn" onclick="openTagModal(${v.id})" title="Etiquetar">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.39.39 1.02.39 1.41 0l7.59-7.59c.39-.39.39-1.02 0-1.41L12 2Z"/><path d="m7 7-.01.01"/></svg>
-      Etiquetar
-    </button>
-    <button class="action-btn" onclick="openAddToListModal(${v.id})" title="Guardar en Lista">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      Guardar en Lista
-    </button>
-    <button class="action-btn" onclick="linkVerseToNote(${v.id}, '${escapeJS(citation)}')" title="Escribir Reflexión">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-      Anotar
-    </button>
-    <button class="action-btn" onclick="compareVerseAll(${v.book_id}, ${v.chapter_number}, ${v.number}, '${escapeJS(citation)}')" title="Comparar Versiones">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
-      Comparar
-    </button>
-    <button class="action-btn" onclick="copyToClipboard('${escapeJS(v.text)}', '${escapeJS(citation)}')" title="Copiar">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-      Copiar
-    </button>
-    <button class="action-btn" onclick="openShareModal('${escapeJS(v.text)}', '${escapeJS(citation)}')" title="Compartir Pasaje">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-      Compartir
-    </button>
-    <button class="action-btn" onclick="openGeneratorForVerse(${v.id}, '${escapeJS(v.text)}', '${escapeJS(citation)}')" title="Crear Imagen">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-      Diseñar
-    </button>
+    <div class="verse-actions-menu-wrapper">
+      <button class="action-btn verse-menu-toggle" onclick="toggleVerseMenu(event, ${v.id})" title="Acciones">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="verse-actions-dropdown" id="${menuId}" style="display: none;">
+        <button class="action-btn" onclick="toggleFavorite(this, ${v.id}); closeVerseMenu(${v.id})" title="Marcar Favorito">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          Favorito
+        </button>
+        <button class="action-btn" onclick="openTagModal(${v.id}); closeVerseMenu(${v.id})" title="Etiquetar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.39.39 1.02.39 1.41 0l7.59-7.59c.39-.39.39-1.02 0-1.41L12 2Z"/><path d="m7 7-.01.01"/></svg>
+          Etiquetar
+        </button>
+        <button class="action-btn" onclick="openAddToListModal(${v.id}); closeVerseMenu(${v.id})" title="Guardar en Lista">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Guardar en Lista
+        </button>
+        <button class="action-btn" onclick="linkVerseToNote(${v.id}, '${escapeJS(citation)}'); closeVerseMenu(${v.id})" title="Escribir Reflexión">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          Anotar
+        </button>
+        <button class="action-btn" onclick="compareVerseAll(${v.book_id}, ${v.chapter_number}, ${v.number}, '${escapeJS(citation)}'); closeVerseMenu(${v.id})" title="Comparar Versiones">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+          Comparar
+        </button>
+        <button class="action-btn" onclick="copyToClipboard('${escapeJS(v.text)}', '${escapeJS(citation)}'); closeVerseMenu(${v.id})" title="Copiar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          Copiar
+        </button>
+        <button class="action-btn" onclick="openShareModal('${escapeJS(v.text)}', '${escapeJS(citation)}'); closeVerseMenu(${v.id})" title="Compartir Pasaje">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+          Compartir
+        </button>
+        <button class="action-btn" onclick="openGeneratorForVerse(${v.id}, '${escapeJS(v.text)}', '${escapeJS(citation)}'); closeVerseMenu(${v.id})" title="Crear Imagen">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          Diseñar
+        </button>
+      </div>
+    </div>
   `;
+}
+
+function toggleVerseMenu(event, verseId) {
+  event.stopPropagation();
+  const menu = document.getElementById(`verse-menu-${verseId}`);
+  if (!menu) return;
+  const isHidden = menu.style.display === 'none';
+  // Cerrar todos los menús abiertos
+  document.querySelectorAll('.verse-actions-dropdown').forEach(m => {
+    m.style.display = 'none';
+  });
+  menu.style.display = isHidden ? 'flex' : 'none';
+}
+
+function closeVerseMenu(verseId) {
+  const menu = document.getElementById(`verse-menu-${verseId}`);
+  if (menu) menu.style.display = 'none';
 }
 
 // Renderiza la vista de capítulo completo cuando la búsqueda es una cita
