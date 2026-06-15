@@ -894,6 +894,50 @@ function renderChapterView(verses, parsedCitation) {
   }
 }
 
+// Renderizar vista de estudio temático (Fe, Amor, Esperanza, etc.)
+function renderStudyView(study, verses) {
+  const container = document.getElementById('verses-results-container');
+  container.innerHTML = '';
+
+  if (!verses || verses.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; color: var(--text-secondary); padding: 40px;">
+        <p>El estudio no tiene versículos vinculados.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const studyHeader = document.createElement('div');
+  studyHeader.className = 'chapter-view-header';
+  studyHeader.innerHTML = `
+    <h2 style="font-family: var(--font-title); font-size: 1.6rem; font-weight: 700; margin-bottom: 8px;">Estudio: ${escapeHTML(study.topic)}</h2>
+    <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 12px;">${escapeHTML(study.summary || '')}</p>
+    <div class="study-content" style="font-size: 0.95rem; line-height: 1.7; color: var(--text-primary); margin-bottom: 16px;">${escapeHTML(study.content).replace(/\n/g, '<br>')}</div>
+    <p style="color: var(--accent); font-weight: 600; font-size: 0.9rem;">Versículos relacionados (${verses.length}):</p>
+  `;
+  container.appendChild(studyHeader);
+
+  verses.forEach(v => {
+    const verseEl = document.createElement('div');
+    verseEl.className = 'reader-verse chapter-verse';
+    const citation = `${v.book_name} ${v.chapter_number}:${v.number}`;
+    verseEl.innerHTML = `
+      <span class="reader-verse-num">${v.number}</span>
+      <span>${escapeHTML(v.text)}</span>
+      <div class="verse-actions-toolbar chapter-verse-actions">
+        ${getVerseActionsHTML(v, citation)}
+      </div>
+    `;
+    container.appendChild(verseEl);
+  });
+
+  // Sincronizar lector lateral con el primer versículo del estudio
+  if (verses[0]) {
+    syncReaderWithCitation(verses[0].book_id, verses[0].chapter_number, verses[0].id);
+  }
+}
+
 // Sincroniza el lector lateral con un capítulo sin requerir evento de click
 function syncReaderWithCitation(bookId, chapterNumber, verseId) {
   const selectBook = document.getElementById('reader-select-book');
@@ -964,6 +1008,17 @@ async function executeSearchQuery() {
       renderChapterView(data.results, data.parsed_citation);
 
       // Refrescar búsquedas recientes si corresponde
+      if (isLoggedIn()) {
+        loadRecentSearches();
+      }
+      return;
+    }
+
+    // Si es un estudio temático (Fe, Amor, Esperanza...), mostrar el estudio y sus versículos
+    if (data.parsed_study) {
+      countEl.textContent = `${data.total} versículos · Estudio: ${data.parsed_study.topic}`;
+      renderStudyView(data.parsed_study, data.results);
+
       if (isLoggedIn()) {
         loadRecentSearches();
       }
@@ -2228,6 +2283,8 @@ function switchReaderTab(tab) {
   else if (tab === 'etiquetas') loadSideTags();
   else if (tab === 'listas') loadSideLists();
   else if (tab === 'historial') loadSideHistory();
+  else if (tab === 'historia') loadSideBookStudy();
+  else if (tab === 'eventos') loadSideEvents();
 }
 
 async function loadSideNotes() {
@@ -2378,5 +2435,74 @@ async function loadSideHistory() {
     });
   } catch (error) {
     container.innerHTML = '<p class="side-panel-empty">Error al cargar historial.</p>';
+  }
+}
+
+
+async function loadSideBookStudy() {
+  const container = document.getElementById('side-book-study');
+  if (!container) return;
+
+  const bookSelect = document.getElementById('reader-select-book');
+  const bookId = bookSelect ? bookSelect.value : null;
+
+  if (!bookId) {
+    container.innerHTML = '<p class="side-panel-empty">Selecciona un libro para ver su historia y contexto.</p>';
+    return;
+  }
+
+  container.innerHTML = '<p class="side-panel-empty">Cargando historia del libro...</p>';
+  try {
+    const res = await fetch(`/api/studies/book/${bookId}`);
+    if (!res.ok) throw new Error();
+    const bs = await res.json();
+
+    container.innerHTML = `
+      <h4 style="margin-bottom: 10px; color: var(--primary); font-family: var(--font-title); font-size: 1.1rem;">${escapeHTML(bs.book_name)}</h4>
+      <div class="side-panel-item-meta" style="margin-bottom: 6px;"><strong>Autor:</strong> ${escapeHTML(bs.author || 'Desconocido')}</div>
+      <div class="side-panel-item-meta" style="margin-bottom: 6px;"><strong>Fecha:</strong> ${escapeHTML(bs.date_written || 'Desconocida')}</div>
+      <div class="side-panel-item-meta" style="margin-bottom: 6px;"><strong>Propósito:</strong> ${escapeHTML(bs.purpose || '')}</div>
+      <div class="side-panel-item-meta" style="margin-bottom: 14px;"><strong>Temas:</strong> ${escapeHTML(bs.key_themes || '')}</div>
+      <div style="font-size: 0.9rem; line-height: 1.6; color: var(--text-primary);">${escapeHTML(bs.content).replace(/\n/g, '<br>')}</div>
+    `;
+  } catch (error) {
+    container.innerHTML = '<p class="side-panel-empty">Error al cargar la historia del libro.</p>';
+  }
+}
+
+async function loadSideEvents() {
+  const container = document.getElementById('side-events-list');
+  if (!container) return;
+
+  container.innerHTML = '<p class="side-panel-empty">Cargando eventos históricos...</p>';
+  try {
+    const res = await fetch('/api/studies/events');
+    const events = await res.json();
+
+    if (events.length === 0) {
+      container.innerHTML = '<p class="side-panel-empty">No hay eventos registrados.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    events.forEach(ev => {
+      const el = document.createElement('div');
+      el.className = 'side-panel-item';
+      const ref = ev.chapter_start
+        ? `${ev.book_name} ${ev.chapter_start}${ev.verse_start ? ':' + ev.verse_start : ''}`
+        : ev.book_name;
+      el.innerHTML = `
+        <div class="side-panel-item-title">${escapeHTML(ev.title)}</div>
+        <div class="side-panel-item-meta">${escapeHTML(ref)}</div>
+      `;
+      el.addEventListener('click', () => {
+        document.getElementById('main-search-input').value = ref;
+        document.getElementById('results-search-input').value = ref;
+        triggerSearch(ref);
+      });
+      container.appendChild(el);
+    });
+  } catch (error) {
+    container.innerHTML = '<p class="side-panel-empty">Error al cargar eventos.</p>';
   }
 }

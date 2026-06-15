@@ -163,3 +163,74 @@ CREATE TABLE IF NOT EXISTS user_achievements (
   PRIMARY KEY (user_id, achievement_key),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+
+-- Tabla de estudios bíblicos por tema (Fe, Amor, Esperanza, etc.)
+CREATE TABLE IF NOT EXISTS studies (
+  id SERIAL PRIMARY KEY,
+  topic VARCHAR(100) NOT NULL UNIQUE,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  summary TEXT,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TRIGGER IF EXISTS update_studies_updated_at ON studies;
+CREATE TRIGGER update_studies_updated_at
+BEFORE UPDATE ON studies
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Versículos relacionados con cada estudio/tema
+CREATE TABLE IF NOT EXISTS study_verses (
+  study_id INT NOT NULL,
+  verse_id INT NOT NULL,
+  PRIMARY KEY (study_id, verse_id),
+  FOREIGN KEY (study_id) REFERENCES studies(id) ON DELETE CASCADE,
+  FOREIGN KEY (verse_id) REFERENCES verses(id) ON DELETE CASCADE
+);
+
+-- Tabla de estudios/historia de cada libro bíblico
+CREATE TABLE IF NOT EXISTS book_studies (
+  id SERIAL PRIMARY KEY,
+  book_id INT NOT NULL UNIQUE,
+  author VARCHAR(255),
+  date_written VARCHAR(255),
+  purpose TEXT,
+  key_themes TEXT,
+  summary TEXT,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+);
+
+DROP TRIGGER IF EXISTS update_book_studies_updated_at ON book_studies;
+CREATE TRIGGER update_book_studies_updated_at
+BEFORE UPDATE ON book_studies
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Tabla de eventos/historia bíblica
+CREATE TABLE IF NOT EXISTS events (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(280) NOT NULL UNIQUE,
+  description TEXT NOT NULL,
+  book_id INT NOT NULL,
+  chapter_start INT,
+  chapter_end INT,
+  verse_start INT,
+  verse_end INT,
+  timeline_order INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+);
+
+DROP TRIGGER IF EXISTS update_events_updated_at ON events;
+CREATE TRIGGER update_events_updated_at
+BEFORE UPDATE ON events
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();

@@ -24,6 +24,7 @@ const noteRoutes = require('./routes/notes');
 const listRoutes = require('./routes/lists');
 const adminRoutes = require('./routes/admin');
 const gameRoutes = require('./routes/games');
+const studyRoutes = require('./routes/studies');
 
 // Registrar Rutas de la API
 app.use('/api/auth', authRoutes);
@@ -34,6 +35,7 @@ app.use('/api/notes', noteRoutes);
 app.use('/api/lists', listRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/games', gameRoutes);
+app.use('/api/studies', studyRoutes);
 
 // Servir páginas específicas para soporte de rutas directas si es necesario
 app.get('/', (req, res) => {

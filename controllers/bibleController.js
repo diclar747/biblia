@@ -241,6 +241,47 @@ const bibleController = {
         });
       }
 
+      // Detectar si la búsqueda coincide con un estudio temático (Fe, Amor, Esperanza, etc.)
+      let parsedStudy = null;
+      if (q && q.trim() !== '' && !parsedCitation) {
+        let cleanQ = q.trim().replace(/^Tema:\s*/i, '').trim();
+        const normalizedQ = normalizeText(cleanQ);
+        const studyResult = await pool.query(
+          'SELECT id, topic, slug, summary, content FROM studies WHERE slug = $1 OR topic ILIKE $2 LIMIT 1',
+          [normalizedQ, cleanQ]
+        );
+        if (studyResult.rows.length > 0) {
+          parsedStudy = studyResult.rows[0];
+          const studyVersesResult = await pool.query(
+            `SELECT 
+              v.id, 
+              v.number, 
+              v.text, 
+              vt.abbreviation as version, 
+              b.name as book_name, 
+              b.id as book_id,
+              c.number as chapter_number,
+              (SELECT STRING_AGG(t.name, ',') FROM verse_tags vt3 JOIN tags t ON vt3.tag_id = t.id WHERE vt3.verse_id = v.id) as tags
+             FROM study_verses sv
+             JOIN verses v ON sv.verse_id = v.id
+             JOIN chapters c ON v.chapter_id = c.id
+             JOIN books b ON c.book_id = b.id
+             JOIN versions vt ON v.version_id = vt.id
+             WHERE sv.study_id = $1
+             ORDER BY b.book_order, c.number, v.number`,
+            [parsedStudy.id]
+          );
+          const studyVerses = studyVersesResult.rows;
+          return res.json({
+            total: studyVerses.length,
+            results: studyVerses,
+            limit: studyVerses.length,
+            offset: 0,
+            parsed_study: parsedStudy
+          });
+        }
+      }
+
       let queryParts = [];
       let queryParams = [];
 
