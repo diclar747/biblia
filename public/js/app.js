@@ -2465,8 +2465,6 @@ async function loadSideEvents() {
 
 // ===== COMUNIDAD / MINI RED SOCIAL =====
 
-const ALLOWED_REACTIONS = ['❤️', '👍', '🙏', '😢', '😮', '🔥', '👏', '🕊️'];
-
 async function loadSideCommunity() {
   const container = document.getElementById('side-community-list');
   if (!container) return;
@@ -2512,10 +2510,11 @@ function createCommunityPostElement(post) {
   div.className = 'community-post';
   div.dataset.postId = post.id;
 
-  const reactionsHTML = (post.reactions || []).map(r => {
-    const active = r.reaction === post.user_reaction ? 'active' : '';
-    return `<span class="community-reaction-badge ${active}" onclick="reactToCommunityPost(${post.id}, '${r.reaction}')">${r.reaction} ${r.count}</span>`;
-  }).join('');
+  const likes = (post.reactions || []).find(r => r.reaction === '👍')?.count || 0;
+  const dislikes = (post.reactions || []).find(r => r.reaction === '👎')?.count || 0;
+  const userReaction = post.user_reaction || '';
+  const likeActive = userReaction === '👍' ? 'active' : '';
+  const dislikeActive = userReaction === '👎' ? 'active' : '';
 
   div.innerHTML = `
     <div class="community-post-header">
@@ -2527,10 +2526,8 @@ function createCommunityPostElement(post) {
     </div>
     <div class="community-post-content">${escapeHTML(post.content)}</div>
     <div class="community-post-actions">
-      <div class="community-reactions">
-        ${reactionsHTML}
-        <button class="community-emoji-btn" onclick="showReactionPicker(event, 'post', ${post.id})" title="Reaccionar">😊</button>
-      </div>
+      <button class="community-like-btn ${likeActive}" onclick="toggleCommunityReaction('post', ${post.id}, '👍', '${escapeJS(userReaction)}')">👍 Me gusta${likes > 0 ? ` ${likes}` : ''}</button>
+      <button class="community-dislike-btn ${dislikeActive}" onclick="toggleCommunityReaction('post', ${post.id}, '👎', '${escapeJS(userReaction)}')">👎 No me gusta${dislikes > 0 ? ` ${dislikes}` : ''}</button>
       <button class="community-action-btn" onclick="toggleCommunityComments(${post.id})">💬 ${post.comments_count || 0}</button>
       <button class="community-action-btn" onclick="shareCommunityPost(${post.id})">🔗 Compartir</button>
     </div>
@@ -2569,34 +2566,7 @@ async function submitCommunityPost() {
   }
 }
 
-function showReactionPicker(event, type, id) {
-  event.stopPropagation();
-  closeReactionPicker();
-
-  const picker = document.createElement('div');
-  picker.id = 'community-reaction-picker';
-  picker.className = 'community-reaction-picker';
-  picker.innerHTML = ALLOWED_REACTIONS.map(emoji =>
-    `<button class="community-picker-emoji" onclick="handleCommunityReaction('${type}', ${id}, '${emoji}')">${emoji}</button>`
-  ).join('');
-
-  document.body.appendChild(picker);
-  const rect = event.currentTarget.getBoundingClientRect();
-  picker.style.top = `${rect.bottom + window.scrollY + 6}px`;
-  picker.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - 220)}px`;
-
-  setTimeout(() => {
-    document.addEventListener('click', closeReactionPicker, { once: true });
-  }, 10);
-}
-
-function closeReactionPicker() {
-  const picker = document.getElementById('community-reaction-picker');
-  if (picker) picker.remove();
-}
-
-async function handleCommunityReaction(type, id, emoji) {
-  closeReactionPicker();
+async function toggleCommunityReaction(type, id, emoji, currentReaction) {
   if (!isLoggedIn()) {
     showToast('Inicia sesión para reaccionar.', 'warning');
     return;
@@ -2607,11 +2577,20 @@ async function handleCommunityReaction(type, id, emoji) {
     : `/api/community/comments/${id}/reactions`;
 
   try {
-    await fetch(url, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ reaction: emoji })
-    });
+    if (currentReaction === emoji) {
+      // Quitar reacción si ya está activa
+      await fetch(url, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+    } else {
+      // Agregar o cambiar reacción
+      await fetch(url, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ reaction: emoji })
+      });
+    }
     loadSideCommunity();
   } catch (error) {
     showToast('Error al reaccionar.', 'error');
@@ -2646,10 +2625,11 @@ function renderCommunityComments(container, comments, postId) {
   }
 
   comments.forEach(comment => {
-    const reactionsHTML = (comment.reactions || []).map(r => {
-      const active = r.reaction === comment.user_reaction ? 'active' : '';
-      return `<span class="community-reaction-badge ${active}" onclick="handleCommunityReaction('comment', ${comment.id}, '${r.reaction}')">${r.reaction} ${r.count}</span>`;
-    }).join('');
+    const likes = (comment.reactions || []).find(r => r.reaction === '👍')?.count || 0;
+    const dislikes = (comment.reactions || []).find(r => r.reaction === '👎')?.count || 0;
+    const userReaction = comment.user_reaction || '';
+    const likeActive = userReaction === '👍' ? 'active' : '';
+    const dislikeActive = userReaction === '👎' ? 'active' : '';
 
     const el = document.createElement('div');
     el.className = 'community-comment';
@@ -2660,10 +2640,8 @@ function renderCommunityComments(container, comments, postId) {
       </div>
       <div class="community-comment-content">${escapeHTML(comment.content)}</div>
       <div class="community-comment-actions">
-        <div class="community-reactions">
-          ${reactionsHTML}
-          <button class="community-emoji-btn" onclick="showReactionPicker(event, 'comment', ${comment.id})" title="Reaccionar">😊</button>
-        </div>
+        <button class="community-like-btn small ${likeActive}" onclick="toggleCommunityReaction('comment', ${comment.id}, '👍', '${escapeJS(userReaction)}')">👍 Me gusta${likes > 0 ? ` ${likes}` : ''}</button>
+        <button class="community-dislike-btn small ${dislikeActive}" onclick="toggleCommunityReaction('comment', ${comment.id}, '👎', '${escapeJS(userReaction)}')">👎 No me gusta${dislikes > 0 ? ` ${dislikes}` : ''}</button>
         <button class="community-action-btn small" onclick="showReplyInput(${postId}, ${comment.id})">↩️ Responder</button>
       </div>
       <div class="community-replies" id="replies-${comment.id}">
@@ -2743,8 +2721,7 @@ function shareCommunityPost(postId) {
 
 // Exponer funciones globales para los onclick inline
 window.submitCommunityPost = submitCommunityPost;
-window.showReactionPicker = showReactionPicker;
-window.handleCommunityReaction = handleCommunityReaction;
+window.toggleCommunityReaction = toggleCommunityReaction;
 window.toggleCommunityComments = toggleCommunityComments;
 window.submitCommunityComment = submitCommunityComment;
 window.showReplyInput = showReplyInput;

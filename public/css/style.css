@@ -2705,6 +2705,46 @@ body.is-offline::before {
   font-size: 0.72rem;
 }
 
+.community-like-btn,
+.community-dislike-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.community-like-btn.small,
+.community-dislike-btn.small {
+  padding: 3px 8px;
+  font-size: 0.72rem;
+}
+
+.community-like-btn:hover,
+.community-dislike-btn:hover {
+  background: var(--bg-secondary);
+}
+
+.community-like-btn.active {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: var(--success);
+  color: var(--success);
+  font-weight: 600;
+}
+
+.community-dislike-btn.active {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: var(--danger);
+  color: var(--danger);
+  font-weight: 600;
+}
+
 .community-reaction-picker {
   position: absolute;
   z-index: 200;
