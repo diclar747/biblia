@@ -1552,6 +1552,129 @@ textarea.form-control {
   color: var(--danger);
 }
 
+/* ===== ARENA DE JUEGO ===== */
+.game-arena {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: min(520px, calc(100vh - 200px));
+  padding: 24px;
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.game-exit-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 1.6rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  z-index: 10;
+}
+
+.game-exit-btn:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.game-arena-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-right: 44px;
+  flex-wrap: wrap;
+}
+
+.game-lives {
+  font-size: 1.25rem;
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.game-timer {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--danger);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.game-progress-wrap {
+  flex: 1;
+  min-width: 120px;
+  height: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.game-progress-bar {
+  width: 0%;
+  height: 100%;
+  background-color: var(--success);
+  transition: var(--transition);
+}
+
+.game-question-zone {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+  width: 100%;
+  min-height: 0;
+}
+
+.game-answer-zone {
+  width: 100%;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.game-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.game-feedback-msg {
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+}
+
+.game-action-btn {
+  padding: 12px 28px;
+  min-width: 140px;
+}
+
 /* Botones de True/False en juegos */
 .tf-btn {
   transition: var(--transition-base) !important;
@@ -1560,6 +1683,7 @@ textarea.form-control {
   box-shadow: var(--shadow-xs);
   background-color: var(--bg-secondary) !important;
   font-weight: 700 !important;
+  min-height: 52px;
 }
 
 .tf-btn:hover {
@@ -1571,6 +1695,10 @@ textarea.form-control {
 .opt-btn {
   transition: var(--transition-fast);
   border-width: 2px !important;
+  min-height: 52px;
+  padding: 12px 16px !important;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .opt-btn.btn-primary {
@@ -2274,17 +2402,185 @@ textarea.form-control {
     grid-template-columns: 1fr !important;
   }
   
-  /* Memoria en móvil */
-  #game-answer-zone div[style*="grid-template-columns: repeat(4, 1fr)"] {
-    grid-template-columns: repeat(2, 1fr) !important;
+  /* ===== JUEGOS EN MÓVIL ===== */
+  .game-arena {
+    padding: 16px;
+    min-height: calc(100vh - 150px);
+    gap: 10px;
+  }
+
+  .game-arena-header {
+    padding-right: 38px;
+    gap: 8px;
+    margin-bottom: 10px;
+    justify-content: flex-start;
+  }
+
+  .game-lives {
+    font-size: 1.1rem;
+  }
+
+  .game-timer {
+    font-size: 0.85rem;
+  }
+
+  .game-progress-wrap {
+    width: 100%;
+    min-width: 0;
+    order: 3;
+    flex: none;
+  }
+
+  .game-question-zone {
+    margin-bottom: 12px;
+    justify-content: flex-start;
+    overflow-y: auto;
+  }
+
+  .game-question-zone > div {
+    width: 100%;
+    max-width: 100% !important;
+  }
+
+  .game-answer-zone {
+    margin-bottom: 12px;
+  }
+
+  .game-action-bar {
+    padding: 12px 0 0;
+    background: transparent;
+    flex-wrap: wrap;
+  }
+
+  .game-feedback-msg {
+    font-size: 0.95rem;
+    width: 100%;
+    text-align: center;
+    order: 2;
+  }
+
+  .game-action-btn {
+    width: 100%;
+    order: 1;
+    padding: 14px 20px;
+    min-height: 52px;
+    font-size: 1rem;
+  }
+
+  /* Opciones múltiples: 1 columna en móvil para evitar desbordes */
+  .game-answer-zone .opt-btn-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    max-width: 100% !important;
+  }
+
+  .opt-btn {
+    font-size: 0.95rem !important;
+    padding: 14px 16px !important;
+  }
+
+  /* Verdadero / Falso apilados */
+  .game-answer-zone .tf-wrap {
+    flex-direction: column !important;
+    gap: 12px !important;
+    max-width: 100% !important;
+  }
+
+  .tf-btn {
+    width: 100%;
+    min-height: 56px;
+    font-size: 1rem !important;
+  }
+
+  /* Inputs de texto en juegos */
+  .game-answer-zone .game-text-input {
+    max-width: 100% !important;
+    font-size: 1.05rem !important;
+    padding: 14px 16px !important;
+    min-height: 52px;
+  }
+
+  /* Ordenar versículo */
+  .game-answer-zone .order-word-pool {
     gap: 8px !important;
+    margin-top: 10px !important;
   }
-  
-  #game-answer-zone .glass-panel {
-    height: 68px !important;
-    font-size: 0.72rem !important;
+
+  .game-answer-zone .order-word-pool .btn {
+    padding: 8px 14px !important;
+    font-size: 0.9rem !important;
+    border-radius: 18px !important;
   }
-  
+
+  #order-box-answer {
+    min-height: 48px !important;
+    padding: 8px !important;
+    max-width: 100% !important;
+  }
+
+  #order-box-answer .verse-tag-item {
+    padding: 6px 10px !important;
+    font-size: 0.88rem !important;
+  }
+
+  /* Memoria en móvil */
+  .game-answer-zone .memory-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    max-width: 100% !important;
+  }
+
+  .game-answer-zone .memory-card {
+    height: 72px !important;
+    font-size: 0.75rem !important;
+    padding: 6px !important;
+  }
+
+  /* Historias interactivas */
+  .game-story-box {
+    max-height: min(180px, 28vh) !important;
+    font-size: 0.88rem !important;
+    padding: 12px !important;
+  }
+
+  /* Pantalla de resultados */
+  #game-results-panel .glass-panel > div[style*="display: flex; justify-content: center"] {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+
+  #game-results-panel h2 {
+    font-size: 1.45rem !important;
+  }
+
+  #game-results-panel .glass-panel {
+    padding: 22px 16px !important;
+  }
+
+  #game-results-panel button[onclick="backToGameSelection()"] {
+    width: 100%;
+    padding: 14px 20px !important;
+    min-height: 52px;
+  }
+
+  /* Mascota más compacta */
+  .mascot-container {
+    gap: 10px;
+    margin: 6px auto 12px auto;
+  }
+
+  .mascot-avatar {
+    width: 56px;
+    height: 56px;
+    font-size: 2.2rem;
+  }
+
+  .mascot-bubble {
+    padding: 10px 12px;
+    font-size: 0.82rem;
+  }
+
   /* Inputs más grandes para touch */
   .btn, .action-btn, .form-control, .filter-select {
     min-height: 44px;

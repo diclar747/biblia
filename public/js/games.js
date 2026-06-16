@@ -177,6 +177,20 @@ document.addEventListener('DOMContentLoaded', () => {
   if (actionBtn) {
     actionBtn.addEventListener('click', handleGameAction);
   }
+
+  // Ocultar bottom nav cuando un input del juego recibe foco (evita que suba con el teclado virtual)
+  const answerZone = document.getElementById('game-answer-zone');
+  const bottomNav = document.getElementById('bottom-nav');
+  if (answerZone && bottomNav) {
+    answerZone.addEventListener('focusin', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        bottomNav.classList.add('hidden');
+      }
+    });
+    answerZone.addEventListener('focusout', () => {
+      bottomNav.classList.remove('hidden');
+    });
+  }
 });
 
 // Mostrar panel de juegos y cargar datos
@@ -318,6 +332,7 @@ async function startNewGame(mode) {
   document.getElementById('game-selection-panel').classList.add('hidden');
   document.getElementById('game-results-panel').classList.add('hidden');
   document.getElementById('game-play-panel').classList.remove('hidden');
+  adjustGameArenaHeight();
 
   // Mensaje cargando
   document.getElementById('game-question-zone').innerHTML = '<p>Cargando preguntas de la Academia...</p>';
@@ -389,12 +404,12 @@ function renderCurrentQuestion() {
       <p style="font-size:0.8rem; color:var(--text-muted); margin-top:8px;">Categoría: ${q.category || 'General'}</p>
     `;
     aZone.innerHTML = `
-      <div class="form-group" style="max-width: 400px; margin: 0 auto;">
-        <input type="text" id="game-text-answer" class="form-control" placeholder="Escribe tu respuesta aquí..." autocomplete="off" style="text-align: center; font-size: 1.1rem; font-weight:600;">
+      <div class="form-group" style="max-width: 100%; margin: 0 auto;">
+        <input type="text" id="game-text-answer" class="form-control game-text-input" placeholder="Escribe tu respuesta aquí..." autocomplete="off" style="text-align: center; font-weight:600;">
       </div>
     `;
     const input = document.getElementById('game-text-answer');
-    input.focus();
+    safeFocus(input);
     input.addEventListener('input', () => {
       actionBtn.disabled = input.value.trim() === '';
     });
@@ -428,6 +443,7 @@ function renderCurrentQuestion() {
     // Desordenar palabras
     const wordsShuffled = [...q.words].sort(() => 0.5 - Math.random());
     const wordPool = document.createElement('div');
+    wordPool.className = 'order-word-pool';
     wordPool.style.display = 'flex';
     wordPool.style.flexWrap = 'wrap';
     wordPool.style.gap = '8px';
@@ -458,7 +474,7 @@ function renderCurrentQuestion() {
     // 5. HISTORIAS INTERACTIVAS (Primero leemos, luego preguntamos)
     // Para simplificar, guardamos la pregunta del subcuestionario actual en un estado
     qZone.innerHTML = `
-      <div style="max-height: 250px; overflow-y:auto; padding:15px; border-radius:var(--radius-sm); border:1px solid var(--border-color); background-color:var(--bg-tertiary); margin-bottom:15px; text-align:left; font-size:0.92rem; line-height:1.5;">
+      <div class="game-story-box" style="max-height: min(220px, 35vh); overflow-y:auto; padding:15px; border-radius:var(--radius-sm); border:1px solid var(--border-color); background-color:var(--bg-tertiary); margin-bottom:15px; text-align:left; font-size:0.92rem; line-height:1.5;">
         <strong>Historia: ${escapeHTML(q.title)}</strong><br><br>
         ${escapeHTML(q.story)}
       </div>
@@ -477,9 +493,9 @@ function renderCurrentQuestion() {
       <p style="font-size:0.85rem; color:var(--text-secondary);">¿La frase anterior es verdadera o falsa?</p>
     `;
     aZone.innerHTML = `
-      <div style="display:flex; justify-content:center; gap:20px; max-width:300px; margin:0 auto; width:100%;">
-        <button class="btn btn-secondary tf-btn" onclick="selectTrueFalse(true)" style="border: 2px solid var(--success); flex:1; padding:16px; font-weight:bold; font-size:1.1rem; color:var(--success);">VERDADERO</button>
-        <button class="btn btn-secondary tf-btn" onclick="selectTrueFalse(false)" style="border: 2px solid var(--danger); flex:1; padding:16px; font-weight:bold; font-size:1.1rem; color:var(--danger);">FALSO</button>
+      <div class="tf-wrap" style="display:flex; justify-content:center; gap:20px; max-width:300px; margin:0 auto; width:100%;">
+        <button class="btn btn-secondary tf-btn" onclick="selectTrueFalse(true)" style="border: 2px solid var(--success); flex:1; color:var(--success);">VERDADERO</button>
+        <button class="btn btn-secondary tf-btn" onclick="selectTrueFalse(false)" style="border: 2px solid var(--danger); flex:1; color:var(--danger);">FALSO</button>
       </div>
     `;
   }
@@ -550,14 +566,14 @@ function renderCharacterClues(q) {
   }
 
   aZone.innerHTML = `
-    <div class="form-group" style="max-width: 400px; margin: 15px auto 0 auto;">
+    <div class="form-group" style="max-width: 100%; margin: 15px auto 0 auto;">
       <label style="font-weight:600; font-size:0.8rem;">¿Quién es el personaje?</label>
-      <input type="text" id="game-character-answer" class="form-control" placeholder="Escribe el nombre aquí..." autocomplete="off" style="text-align: center; font-size: 1.1rem; font-weight:600;">
+      <input type="text" id="game-character-answer" class="form-control game-text-input" placeholder="Escribe el nombre aquí..." autocomplete="off" style="text-align: center; font-weight:600;">
     </div>
   `;
 
   const charInput = document.getElementById('game-character-answer');
-  charInput.focus();
+  safeFocus(charInput);
   charInput.addEventListener('input', () => {
     actionBtn.disabled = charInput.value.trim() === '';
   });
@@ -569,6 +585,7 @@ function renderMultipleChoiceOptions(options) {
   const actionBtn = document.getElementById('game-action-btn');
 
   const grid = document.createElement('div');
+  grid.className = 'opt-btn-grid';
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(200px, 1fr))';
   grid.style.gap = '12px';
@@ -579,10 +596,6 @@ function renderMultipleChoiceOptions(options) {
   options.forEach((opt) => {
     const btn = document.createElement('button');
     btn.className = 'btn btn-secondary opt-btn';
-    btn.style.padding = '14px';
-    btn.style.fontFamily = 'var(--font-body)';
-    btn.style.fontSize = '0.98rem';
-    btn.style.textAlign = 'center';
     btn.textContent = opt;
 
     btn.addEventListener('click', () => {
@@ -657,6 +670,7 @@ function renderMemoryGameGrid(q) {
   `;
 
   const grid = document.createElement('div');
+  grid.className = 'memory-grid';
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
   grid.style.gap = '10px';
@@ -673,13 +687,11 @@ function renderMemoryGameGrid(q) {
 
   cards.forEach((cardData, idx) => {
     const card = document.createElement('div');
-    card.className = 'glass-panel';
-    card.style.height = '75px';
+    card.className = 'glass-panel memory-card';
     card.style.display = 'flex';
     card.style.alignItems = 'center';
     card.style.justifyContent = 'center';
     card.style.padding = '8px';
-    card.style.fontSize = '0.78rem';
     card.style.fontWeight = 'bold';
     card.style.cursor = 'pointer';
     card.style.textAlign = 'center';
@@ -896,6 +908,37 @@ function handleGameAction() {
 
   actionBtn.textContent = 'Continuar';
 }
+
+// Enfocar input sin romper el layout en móvil (evita scroll brusco con teclado virtual)
+function safeFocus(input) {
+  if (!input) return;
+  requestAnimationFrame(() => {
+    input.focus({ preventScroll: true });
+    // Asegurar que el input sea visible sin desplazar toda la pantalla
+    setTimeout(() => {
+      if (input.getBoundingClientRect().bottom > window.innerHeight - 120) {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
+  });
+}
+
+// Ajustar altura del arena de juego al viewport disponible (útil al mostrar/ocultar teclado)
+function adjustGameArenaHeight() {
+  const arena = document.querySelector('.game-arena');
+  if (!arena) return;
+  const header = document.querySelector('header');
+  const bottomNav = document.querySelector('.bottom-nav');
+  const headerH = header ? header.offsetHeight : 0;
+  const bottomH = (bottomNav && window.getComputedStyle(bottomNav).display !== 'none') ? bottomNav.offsetHeight : 0;
+  const available = window.innerHeight - headerH - bottomH - 40;
+  arena.style.minHeight = `${Math.max(360, available)}px`;
+}
+
+window.addEventListener('resize', adjustGameArenaHeight);
+window.addEventListener('orientationchange', () => {
+  setTimeout(adjustGameArenaHeight, 200);
+});
 
 // Normalizar texto para tolerar tildes, mayúsculas y espacios extra
 function normalizeText(str) {
