@@ -5,17 +5,8 @@ const { authenticateToken } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 
-// Configuración de multer para subir imágenes de perfil
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'public/uploads/profile_pics/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, 'avatar-' + req.user.id + '-' + uniqueSuffix + ext);
-  }
-});
+// Configuración de multer para subir imágenes de perfil en memoria (compatible con serverless)
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   if (file.mimetype && file.mimetype.startsWith('image/')) {

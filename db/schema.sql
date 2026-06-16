@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS users (
   password VARCHAR(255) NOT NULL,
   role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   default_version_id INT DEFAULT NULL,
-  profile_image VARCHAR(255) DEFAULT NULL,
+  profile_image TEXT DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (default_version_id) REFERENCES versions(id) ON DELETE SET NULL
 );

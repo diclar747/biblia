@@ -169,14 +169,15 @@ const authController = {
     }
   },
 
-  // Cargar foto de perfil
+  // Cargar foto de perfil como data URI (compatible con serverless)
   async uploadProfileImage(req, res) {
     if (!req.file) {
       return res.status(400).json({ error: 'Por favor, proporcione un archivo de imagen.' });
     }
 
     try {
-      const profileImageUrl = `/uploads/profile_pics/${req.file.filename}`;
+      const base64 = req.file.buffer.toString('base64');
+      const profileImageUrl = `data:${req.file.mimetype};base64,${base64}`;
       await pool.query('UPDATE users SET profile_image = $1 WHERE id = $2', [profileImageUrl, req.user.id]);
 
       res.json({
