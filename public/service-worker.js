@@ -1,8 +1,8 @@
-// Biblia Online — Service Worker v16
+// Biblia Online — Service Worker v17
 // Estrategia híbrida: Cache-first para assets, Network-first para API
 
-const CACHE_NAME = 'biblia-online-cache-v16';
-const API_CACHE_NAME = 'biblia-online-api-v16';
+const CACHE_NAME = 'biblia-online-cache-v17';
+const API_CACHE_NAME = 'biblia-online-api-v17';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

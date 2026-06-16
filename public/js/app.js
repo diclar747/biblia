@@ -594,7 +594,21 @@ function setupEventListeners() {
       const placeholder = document.getElementById('profile-image-placeholder');
       const fileInput = document.getElementById('profile-image-input');
       
-      if (fileInput) fileInput.value = '';
+      if (fileInput) {
+        fileInput.value = '';
+        fileInput.onchange = async (e) => {
+          const selectedFile = e.target.files[0];
+          if (!selectedFile || !preview || !placeholder) return;
+          try {
+            const previewBlob = await resizeImageFile(selectedFile, 120, 120, 0.8);
+            preview.src = URL.createObjectURL(previewBlob);
+            preview.style.display = 'block';
+            placeholder.style.display = 'none';
+          } catch (err) {
+            console.error('Error al generar vista previa:', err);
+          }
+        };
+      }
       if (preview && placeholder) {
         if (user.profile_image) {
           preview.src = user.profile_image;
@@ -656,8 +670,9 @@ function setupEventListeners() {
 
       try {
         if (hasImage) {
+          const resizedBlob = await resizeImageFile(imageInput.files[0], 400, 400, 0.85);
           const formData = new FormData();
-          formData.append('profile_image', imageInput.files[0]);
+          formData.append('profile_image', resizedBlob, 'profile.jpg');
           const imgHeaders = getAuthHeaders();
           delete imgHeaders['Content-Type']; // Dejar al navegador fijar boundary
 
@@ -666,7 +681,12 @@ function setupEventListeners() {
             headers: imgHeaders,
             body: formData
           });
-          const imgData = await imgRes.json();
+          let imgData = {};
+          try {
+            imgData = await imgRes.json();
+          } catch {
+            imgData = { error: `Error ${imgRes.status}: ${imgRes.statusText}` };
+          }
           if (!imgRes.ok) throw new Error(imgData.error || 'Error al subir la imagen.');
           uploadedImageUrl = imgData.profile_image;
         }
@@ -1530,6 +1550,43 @@ async function clearSearchHistory() {
 function escapeJS(str) {
   if (!str) return '';
   return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+// Redimensiona y comprime una imagen para reducir su tamaño antes de subirla
+function resizeImageFile(file, maxWidth = 400, maxHeight = 400, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (!blob) return reject(new Error('Error al procesar la imagen.'));
+          resolve(blob);
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = () => reject(new Error('No se pudo cargar la imagen.'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
+    reader.readAsDataURL(file);
+  });
 }
 
 // Fetch con retry automático
