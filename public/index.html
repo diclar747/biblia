@@ -218,50 +218,24 @@
           </div>
         </div>
 
-        <!-- Columna Derecha: Panel lateral con Lector y Espacio Personal -->
+        <!-- Columna Derecha: Panel lateral personal y comunidad -->
         <div class="glass-panel reader-panel">
-          <div class="reader-header">
-            <div class="reader-title-bar">
-              <h3 class="reader-title" id="reader-title-text">Lector Bíblico</h3>
-            </div>
-            <div class="reader-selectors">
-              <select id="reader-select-book" class="form-control reader-select">
-                <!-- Libros por JS -->
-              </select>
-              <select id="reader-select-chapter" class="form-control reader-select" style="max-width: 80px;">
-                <!-- Capítulos por JS -->
-              </select>
-              <select id="reader-select-version" class="form-control reader-select" style="max-width: 100px;">
-                <!-- Versiones por JS -->
-              </select>
-            </div>
-            <div class="reader-nav">
-              <button id="reader-prev-chapter" class="btn btn-secondary reader-nav-btn" disabled>
-                ← Capítulo anterior
-              </button>
-              <button id="reader-next-chapter" class="btn btn-secondary reader-nav-btn">
-                Capítulo siguiente →
-              </button>
-            </div>
-          </div>
-
           <!-- Pestañas del panel lateral -->
           <div class="reader-tabs" id="reader-tabs">
-            <button class="reader-tab active" data-tab="lector">Lector</button>
+            <button class="reader-tab active" data-tab="comunidad">Comunidad</button>
             <button class="reader-tab" data-tab="notas">Notas</button>
             <button class="reader-tab" data-tab="etiquetas">Etiquetas</button>
             <button class="reader-tab" data-tab="listas">Listas</button>
             <button class="reader-tab" data-tab="historial">Historial</button>
             <button class="reader-tab" data-tab="historia">Historia</button>
             <button class="reader-tab" data-tab="eventos">Eventos</button>
-            <button class="reader-tab" data-tab="comunidad">Comunidad</button>
           </div>
 
           <!-- Paneles de contenido -->
           <div class="reader-tab-panels">
-            <div id="reader-tab-lector" class="reader-tab-panel active">
-              <div class="reader-content" id="reader-content-verses">
-                <p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">Selecciona un capítulo o haz clic en la cita de un resultado para leer el texto en contexto.</p>
+            <div id="reader-tab-comunidad" class="reader-tab-panel active">
+              <div class="side-panel-content community-panel" id="side-community-list">
+                <p class="side-panel-empty">Cargando comunidad...</p>
               </div>
             </div>
             <div id="reader-tab-notas" class="reader-tab-panel">
@@ -292,11 +266,6 @@
             <div id="reader-tab-eventos" class="reader-tab-panel">
               <div class="side-panel-content" id="side-events-list">
                 <p class="side-panel-empty">Cargando eventos históricos...</p>
-              </div>
-            </div>
-            <div id="reader-tab-comunidad" class="reader-tab-panel">
-              <div class="side-panel-content community-panel" id="side-community-list">
-                <p class="side-panel-empty">Cargando comunidad...</p>
               </div>
             </div>
           </div>

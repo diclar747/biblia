@@ -127,7 +127,6 @@ async function loadFiltersData() {
     const versions = await resVersions.json();
     
     const filterVer = document.getElementById('filter-version');
-    const readerVer = document.getElementById('reader-select-version');
     const profileVer = document.getElementById('profile-version');
 
     const renderVersionSelect = (selectEl, defaultVal) => {
@@ -143,7 +142,6 @@ async function loadFiltersData() {
     };
 
     renderVersionSelect(filterVer, activeVersionId);
-    renderVersionSelect(readerVer, activeVersionId);
     renderVersionSelect(profileVer, activeVersionId);
 
     // 2. Cargar libros
@@ -151,7 +149,6 @@ async function loadFiltersData() {
     const books = await resBooks.json();
     
     const filterBook = document.getElementById('filter-book');
-    const readerBook = document.getElementById('reader-select-book');
 
     if (filterBook) {
       books.forEach(b => {
@@ -160,20 +157,6 @@ async function loadFiltersData() {
         opt.textContent = b.name;
         filterBook.appendChild(opt);
       });
-    }
-
-    if (readerBook) {
-      readerBook.innerHTML = '';
-      books.forEach(b => {
-        const opt = document.createElement('option');
-        opt.value = b.id;
-        opt.textContent = b.name;
-        readerBook.appendChild(opt);
-      });
-      // Inicializar capítulos del primer libro
-      if (books.length > 0) {
-        loadReaderChapters(books[0].id);
-      }
     }
 
     // 3. Cargar etiquetas
@@ -535,39 +518,7 @@ function setupEventListeners() {
     });
   }
 
-  // Selectores de lectura lateral
-  const readerBook = document.getElementById('reader-select-book');
-  const readerCap = document.getElementById('reader-select-chapter');
-  const readerVer = document.getElementById('reader-select-version');
-
-  if (readerBook) {
-    readerBook.addEventListener('change', (e) => {
-      loadReaderChapters(e.target.value, 1);
-    });
-  }
-
-  if (readerCap) {
-    readerCap.addEventListener('change', (e) => {
-      const bookId = readerBook.value;
-      loadReaderVerses(bookId, e.target.value);
-    });
-  }
-
-  if (readerVer) {
-    readerVer.addEventListener('change', () => {
-      const bookId = readerBook.value;
-      const chapter = readerCap.value;
-      loadReaderVerses(bookId, chapter);
-    });
-  }
-
-  // Navegación anterior/siguiente en el lector lateral
-  const readerPrevBtn = document.getElementById('reader-prev-chapter');
-  const readerNextBtn = document.getElementById('reader-next-chapter');
-  if (readerPrevBtn) readerPrevBtn.addEventListener('click', loadPreviousChapter);
-  if (readerNextBtn) readerNextBtn.addEventListener('click', loadNextChapter);
-
-  // Pestañas del panel lateral (Lector / Notas / Etiquetas / Listas / Historial)
+  // Pestañas del panel lateral (Comunidad / Notas / Etiquetas / Listas / Historial / Historia / Eventos)
   document.querySelectorAll('#reader-tabs .reader-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       const tab = btn.getAttribute('data-tab');
@@ -790,6 +741,9 @@ function triggerSearch(query) {
   document.getElementById('section-search-home').classList.add('hidden');
   document.getElementById('section-search-results').classList.remove('hidden');
 
+  // Asegurar que el panel lateral muestre la comunidad por defecto
+  if (window.switchReaderTab) switchReaderTab('comunidad');
+
   executeSearchQuery();
 }
 
@@ -950,30 +904,6 @@ function renderStudyView(study, verses) {
   });
 }
 
-// Sincroniza el lector lateral con un capítulo sin requerir evento de click
-function syncReaderWithCitation(bookId, chapterNumber, verseId) {
-  const selectBook = document.getElementById('reader-select-book');
-  const selectVer = document.getElementById('reader-select-version');
-  
-  if (selectBook) selectBook.value = bookId;
-  if (selectVer) selectVer.value = currentFilters.version_id || activeVersionId;
-  
-  loadReaderChapters(bookId, chapterNumber).then(() => {
-    if (verseId) {
-      setTimeout(() => {
-        const verseEl = document.getElementById(`reader-v-${verseId}`);
-        if (verseEl) {
-          verseEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          verseEl.classList.add('reader-verse-highlight');
-          setTimeout(() => {
-            verseEl.classList.remove('reader-verse-highlight');
-          }, 2500);
-        }
-      }, 400);
-    }
-  });
-}
-
 // Ejecutar búsqueda en la API con filtros y paginación
 async function executeSearchQuery() {
   const container = document.getElementById('verses-results-container');
@@ -1068,7 +998,7 @@ async function executeSearchQuery() {
 
       card.innerHTML = `
         <div class="verse-card-header">
-          <a href="#" class="verse-card-ref" onclick="openInReader(event, ${v.book_id}, ${v.chapter_number}, ${v.id})">${escapeHTML(citation)}</a>
+          <a href="#" class="verse-card-ref" onclick="openInReader(event, '${escapeJS(citation)}', ${v.id})">${escapeHTML(citation)}</a>
           <div class="verse-card-header-right">
             <span class="verse-card-version">${v.version}</span>
             ${getVerseActionsHTML(v, citation)}
@@ -1241,10 +1171,8 @@ function selectSuggestion(item, dropdownId) {
   document.getElementById('results-search-input').value = query;
 
   if (item.type === 'book') {
-    // Abrir el libro directamente en el lector, capítulo 1
-    document.getElementById('section-search-home').classList.add('hidden');
-    document.getElementById('section-search-results').classList.remove('hidden');
-    syncReaderWithCitation(item.data.book_id, 1);
+    // Abrir el libro directamente en el capítulo 1
+    triggerSearch(`${item.label} 1`);
   } else {
     // Capítulos, versículos, rangos y temas se resuelven como búsqueda
     triggerSearch(query);
@@ -1297,10 +1225,10 @@ function hideSuggestions() {
   currentSuggestions = [];
 }
 
-// Abrir capítulo desde cita en el lector lateral
-function openInReader(event, bookId, chapterNumber, verseId) {
+// Abrir capítulo completo desde la cita de un resultado
+function openInReader(event, citation, verseId) {
   event.preventDefault();
-  syncReaderWithCitation(bookId, chapterNumber, verseId);
+  triggerSearch(citation);
 }
 
 // --- SECCIÓN: ACCIONES DE VERSÍCULOS ---
@@ -2281,7 +2209,7 @@ function setupPwaInstall() {
 }
 
 
-// ===== PESTAÑAS DEL PANEL LATERAL (Lector / Notas / Etiquetas / Listas / Historial) =====
+// ===== PESTAÑAS DEL PANEL LATERAL (Comunidad / Notas / Etiquetas / Listas / Historial / Historia / Eventos) =====
 
 function switchReaderTab(tab) {
   document.querySelectorAll('#reader-tabs .reader-tab').forEach(btn => {
@@ -2456,11 +2384,25 @@ async function loadSideBookStudy() {
   const container = document.getElementById('side-book-study');
   if (!container) return;
 
+  let bookId = null;
   const bookSelect = document.getElementById('reader-select-book');
-  const bookId = bookSelect ? bookSelect.value : null;
+  if (bookSelect) {
+    bookId = bookSelect.value;
+  }
 
   if (!bookId) {
-    container.innerHTML = '<p class="side-panel-empty">Selecciona un libro para ver su historia y contexto.</p>';
+    // Sin selector de libro, usar el primer libro disponible
+    try {
+      const res = await fetch('/api/bible/books');
+      const books = await res.json();
+      if (books.length > 0) bookId = books[0].id;
+    } catch (e) {
+      bookId = null;
+    }
+  }
+
+  if (!bookId) {
+    container.innerHTML = '<p class="side-panel-empty">No se pudo determinar el libro.</p>';
     return;
   }
 
