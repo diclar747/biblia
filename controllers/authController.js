@@ -185,8 +185,11 @@ const authController = {
         profile_image: profileImageUrl
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Error del servidor al subir la foto de perfil.' });
+      console.error('❌ Error al subir foto de perfil:', error.message);
+      if (error.message && error.message.includes('value too long')) {
+        return res.status(500).json({ error: 'La imagen es demasiado grande para la columna actual. Ejecutá la migración de profile_image a TEXT.' });
+      }
+      res.status(500).json({ error: 'Error del servidor al subir la foto de perfil.', detail: error.message });
     }
   }
 };

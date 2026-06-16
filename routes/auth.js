@@ -26,9 +26,23 @@ const upload = multer({
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 
+// Manejador de errores de Multer para subida de imágenes
+function handleUploadError(err, req, res, next) {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'La imagen no debe superar los 2 MB.' });
+    }
+    return res.status(400).json({ error: 'Error al procesar la imagen: ' + err.message });
+  }
+  if (err) {
+    return res.status(400).json({ error: err.message });
+  }
+  next();
+}
+
 // Rutas protegidas de perfil
 router.get('/profile', authenticateToken, authController.getProfile);
 router.put('/profile', authenticateToken, authController.updateProfile);
-router.post('/profile-image', authenticateToken, upload.single('profile_image'), authController.uploadProfileImage);
+router.post('/profile-image', authenticateToken, upload.single('profile_image'), handleUploadError, authController.uploadProfileImage);
 
 module.exports = router;

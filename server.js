@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { testConnection } = require('./db/database');
+const { testConnection, ensureProfileImageColumn } = require('./db/database');
 require('dotenv').config();
 
 const app = express();
@@ -73,16 +73,20 @@ async function startServer() {
   app.listen(PORT, () => {
     console.log(`🚀 Servidor backend escuchando en: http://localhost:${PORT}`);
   });
-
-  // Verificar conexión de base de datos en segundo plano
-  const isConnected = await testConnection();
-  if (!isConnected) {
-    console.warn('⚠️ ADVERTENCIA: La conexión a la base de datos falló en el arranque. Las funciones dinámicas de la API podrían no estar disponibles.');
-  }
 }
 
 if (require.main === module) {
   startServer();
 }
+
+// Verificar conexión y migraciones necesarias en segundo plano (local y serverless)
+(async () => {
+  const isConnected = await testConnection();
+  if (!isConnected) {
+    console.warn('⚠️ ADVERTENCIA: La conexión a la base de datos falló. Las funciones dinámicas de la API podrían no estar disponibles.');
+  } else {
+    await ensureProfileImageColumn();
+  }
+})();
 
 module.exports = app;
