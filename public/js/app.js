@@ -2297,6 +2297,7 @@ function switchReaderTab(tab) {
   else if (tab === 'historial') loadSideHistory();
   else if (tab === 'historia') loadSideBookStudy();
   else if (tab === 'eventos') loadSideEvents();
+  else if (tab === 'comunidad') loadSideCommunity();
 }
 
 async function loadSideNotes() {
@@ -2518,3 +2519,292 @@ async function loadSideEvents() {
     container.innerHTML = '<p class="side-panel-empty">Error al cargar eventos.</p>';
   }
 }
+
+
+// ===== COMUNIDAD / MINI RED SOCIAL =====
+
+const ALLOWED_REACTIONS = ['❤️', '👍', '🙏', '😢', '😮', '🔥', '👏', '🕊️'];
+
+async function loadSideCommunity() {
+  const container = document.getElementById('side-community-list');
+  if (!container) return;
+
+  container.innerHTML = '<p class="side-panel-empty">Cargando comunidad...</p>';
+  try {
+    const res = await fetch('/api/community/posts', { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error();
+    const posts = await res.json();
+    renderCommunityPosts(container, posts);
+  } catch (error) {
+    container.innerHTML = '<p class="side-panel-empty">Error al cargar la comunidad.</p>';
+  }
+}
+
+function renderCommunityPosts(container, posts) {
+  container.innerHTML = '';
+
+  // Composer para nuevo post
+  const composer = document.createElement('div');
+  composer.className = 'community-composer';
+  composer.innerHTML = `
+    <textarea id="community-post-input" rows="2" placeholder="¿Qué reflexión querés compartir hoy?"></textarea>
+    <button class="btn btn-primary btn-sm" onclick="submitCommunityPost()">Publicar</button>
+  `;
+  container.appendChild(composer);
+
+  if (!posts || posts.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'side-panel-empty';
+    empty.textContent = 'Aún no hay publicaciones. ¡Sé el primero en compartir!';
+    container.appendChild(empty);
+    return;
+  }
+
+  posts.forEach(post => {
+    container.appendChild(createCommunityPostElement(post));
+  });
+}
+
+function createCommunityPostElement(post) {
+  const div = document.createElement('div');
+  div.className = 'community-post';
+  div.dataset.postId = post.id;
+
+  const reactionsHTML = (post.reactions || []).map(r => {
+    const active = r.reaction === post.user_reaction ? 'active' : '';
+    return `<span class="community-reaction-badge ${active}" onclick="reactToCommunityPost(${post.id}, '${r.reaction}')">${r.reaction} ${r.count}</span>`;
+  }).join('');
+
+  div.innerHTML = `
+    <div class="community-post-header">
+      <div class="community-avatar">${escapeHTML((post.user_name || 'U').charAt(0).toUpperCase())}</div>
+      <div class="community-post-meta">
+        <div class="community-username">${escapeHTML(post.user_name || 'Usuario')}</div>
+        <div class="community-time">${new Date(post.created_at).toLocaleString()}</div>
+      </div>
+    </div>
+    <div class="community-post-content">${escapeHTML(post.content)}</div>
+    <div class="community-post-actions">
+      <div class="community-reactions">
+        ${reactionsHTML}
+        <button class="community-emoji-btn" onclick="showReactionPicker(event, 'post', ${post.id})" title="Reaccionar">😊</button>
+      </div>
+      <button class="community-action-btn" onclick="toggleCommunityComments(${post.id})">💬 ${post.comments_count || 0}</button>
+      <button class="community-action-btn" onclick="shareCommunityPost(${post.id})">🔗 Compartir</button>
+    </div>
+    <div class="community-comments" id="comments-${post.id}" style="display: none;">
+      <div class="community-comments-list" id="comments-list-${post.id}"></div>
+      <div class="community-comment-input-row">
+        <input type="text" id="comment-input-${post.id}" placeholder="Escribe un comentario..." />
+        <button class="btn btn-primary btn-sm" onclick="submitCommunityComment(${post.id})">Enviar</button>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+async function submitCommunityPost() {
+  if (!isLoggedIn()) {
+    showToast('Inicia sesión para publicar.', 'warning');
+    return;
+  }
+  const input = document.getElementById('community-post-input');
+  const content = input.value.trim();
+  if (!content) return;
+
+  try {
+    const res = await fetch('/api/community/posts', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ content })
+    });
+    if (!res.ok) throw new Error();
+    input.value = '';
+    loadSideCommunity();
+    showToast('Publicación creada.', 'success');
+  } catch (error) {
+    showToast('Error al publicar.', 'error');
+  }
+}
+
+function showReactionPicker(event, type, id) {
+  event.stopPropagation();
+  closeReactionPicker();
+
+  const picker = document.createElement('div');
+  picker.id = 'community-reaction-picker';
+  picker.className = 'community-reaction-picker';
+  picker.innerHTML = ALLOWED_REACTIONS.map(emoji =>
+    `<button class="community-picker-emoji" onclick="handleCommunityReaction('${type}', ${id}, '${emoji}')">${emoji}</button>`
+  ).join('');
+
+  document.body.appendChild(picker);
+  const rect = event.currentTarget.getBoundingClientRect();
+  picker.style.top = `${rect.bottom + window.scrollY + 6}px`;
+  picker.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - 220)}px`;
+
+  setTimeout(() => {
+    document.addEventListener('click', closeReactionPicker, { once: true });
+  }, 10);
+}
+
+function closeReactionPicker() {
+  const picker = document.getElementById('community-reaction-picker');
+  if (picker) picker.remove();
+}
+
+async function handleCommunityReaction(type, id, emoji) {
+  closeReactionPicker();
+  if (!isLoggedIn()) {
+    showToast('Inicia sesión para reaccionar.', 'warning');
+    return;
+  }
+
+  const url = type === 'post'
+    ? `/api/community/posts/${id}/reactions`
+    : `/api/community/comments/${id}/reactions`;
+
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ reaction: emoji })
+    });
+    loadSideCommunity();
+  } catch (error) {
+    showToast('Error al reaccionar.', 'error');
+  }
+}
+
+async function toggleCommunityComments(postId) {
+  const panel = document.getElementById(`comments-${postId}`);
+  if (!panel) return;
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? 'block' : 'none';
+
+  if (isHidden) {
+    const list = document.getElementById(`comments-list-${postId}`);
+    list.innerHTML = '<p class="community-loading">Cargando comentarios...</p>';
+    try {
+      const res = await fetch(`/api/community/posts/${postId}/comments`, { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error();
+      const comments = await res.json();
+      renderCommunityComments(list, comments, postId);
+    } catch (error) {
+      list.innerHTML = '<p class="community-loading">Error al cargar comentarios.</p>';
+    }
+  }
+}
+
+function renderCommunityComments(container, comments, postId) {
+  container.innerHTML = '';
+  if (!comments || comments.length === 0) {
+    container.innerHTML = '<p class="community-loading">Aún no hay comentarios.</p>';
+    return;
+  }
+
+  comments.forEach(comment => {
+    const reactionsHTML = (comment.reactions || []).map(r => {
+      const active = r.reaction === comment.user_reaction ? 'active' : '';
+      return `<span class="community-reaction-badge ${active}" onclick="handleCommunityReaction('comment', ${comment.id}, '${r.reaction}')">${r.reaction} ${r.count}</span>`;
+    }).join('');
+
+    const el = document.createElement('div');
+    el.className = 'community-comment';
+    el.innerHTML = `
+      <div class="community-comment-header">
+        <span class="community-username">${escapeHTML(comment.user_name || 'Usuario')}</span>
+        <span class="community-time">${new Date(comment.created_at).toLocaleString()}</span>
+      </div>
+      <div class="community-comment-content">${escapeHTML(comment.content)}</div>
+      <div class="community-comment-actions">
+        <div class="community-reactions">
+          ${reactionsHTML}
+          <button class="community-emoji-btn" onclick="showReactionPicker(event, 'comment', ${comment.id})" title="Reaccionar">😊</button>
+        </div>
+        <button class="community-action-btn small" onclick="showReplyInput(${postId}, ${comment.id})">↩️ Responder</button>
+      </div>
+      <div class="community-replies" id="replies-${comment.id}">
+        ${(comment.replies || []).map(reply => `
+          <div class="community-reply">
+            <div class="community-comment-header">
+              <span class="community-username">${escapeHTML(reply.user_name || 'Usuario')}</span>
+              <span class="community-time">${new Date(reply.created_at).toLocaleString()}</span>
+            </div>
+            <div class="community-comment-content">${escapeHTML(reply.content)}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="community-reply-input-row" id="reply-row-${comment.id}" style="display: none;">
+        <input type="text" id="reply-input-${comment.id}" placeholder="Escribe una respuesta..." />
+        <button class="btn btn-primary btn-sm" onclick="submitCommunityReply(${postId}, ${comment.id})">Enviar</button>
+      </div>
+    `;
+    container.appendChild(el);
+  });
+}
+
+async function submitCommunityComment(postId) {
+  if (!isLoggedIn()) {
+    showToast('Inicia sesión para comentar.', 'warning');
+    return;
+  }
+  const input = document.getElementById(`comment-input-${postId}`);
+  const content = input.value.trim();
+  if (!content) return;
+
+  try {
+    await fetch(`/api/community/posts/${postId}/comments`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ content })
+    });
+    input.value = '';
+    toggleCommunityComments(postId);
+  } catch (error) {
+    showToast('Error al comentar.', 'error');
+  }
+}
+
+function showReplyInput(postId, commentId) {
+  const row = document.getElementById(`reply-row-${commentId}`);
+  if (row) row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+}
+
+async function submitCommunityReply(postId, commentId) {
+  if (!isLoggedIn()) {
+    showToast('Inicia sesión para responder.', 'warning');
+    return;
+  }
+  const input = document.getElementById(`reply-input-${commentId}`);
+  const content = input.value.trim();
+  if (!content) return;
+
+  try {
+    await fetch(`/api/community/posts/${postId}/comments`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ content, parent_comment_id: commentId })
+    });
+    toggleCommunityComments(postId);
+  } catch (error) {
+    showToast('Error al responder.', 'error');
+  }
+}
+
+function shareCommunityPost(postId) {
+  const url = `${window.location.origin}/community/post/${postId}`;
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('Enlace copiado al portapapeles.', 'success');
+  });
+}
+
+// Exponer funciones globales para los onclick inline
+window.submitCommunityPost = submitCommunityPost;
+window.showReactionPicker = showReactionPicker;
+window.handleCommunityReaction = handleCommunityReaction;
+window.toggleCommunityComments = toggleCommunityComments;
+window.submitCommunityComment = submitCommunityComment;
+window.showReplyInput = showReplyInput;
+window.submitCommunityReply = submitCommunityReply;
+window.shareCommunityPost = shareCommunityPost;

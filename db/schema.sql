@@ -234,3 +234,62 @@ CREATE TRIGGER update_events_updated_at
 BEFORE UPDATE ON events
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
+
+
+-- Tabla de posts de la comunidad (mini red social)
+CREATE TABLE IF NOT EXISTS posts (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+DROP TRIGGER IF EXISTS update_posts_updated_at ON posts;
+CREATE TRIGGER update_posts_updated_at
+BEFORE UPDATE ON posts
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Tabla de comentarios y respuestas a posts
+CREATE TABLE IF NOT EXISTS post_comments (
+  id SERIAL PRIMARY KEY,
+  post_id INT NOT NULL,
+  user_id INT NOT NULL,
+  parent_comment_id INT DEFAULT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_comment_id) REFERENCES post_comments(id) ON DELETE CASCADE
+);
+
+DROP TRIGGER IF EXISTS update_post_comments_updated_at ON post_comments;
+CREATE TRIGGER update_post_comments_updated_at
+BEFORE UPDATE ON post_comments
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Tabla de reacciones a posts (emojis)
+CREATE TABLE IF NOT EXISTS post_reactions (
+  post_id INT NOT NULL,
+  user_id INT NOT NULL,
+  reaction VARCHAR(20) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (post_id, user_id),
+  FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Tabla de reacciones a comentarios (emojis)
+CREATE TABLE IF NOT EXISTS comment_reactions (
+  comment_id INT NOT NULL,
+  user_id INT NOT NULL,
+  reaction VARCHAR(20) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (comment_id, user_id),
+  FOREIGN KEY (comment_id) REFERENCES post_comments(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
