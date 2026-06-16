@@ -91,7 +91,7 @@ const bibleController = {
       res.json(result.rows);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Error al obtener versiones de la Biblia.' });
+      res.status(500).json({ error: 'Error al obtener versiones de la Biblia.', detail: error.message });
     }
   },
 

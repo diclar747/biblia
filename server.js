@@ -50,6 +50,16 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+// Health check para diagnosticar conexión a base de datos
+app.get('/api/health', async (req, res) => {
+  const dbStatus = await testConnection();
+  res.json({
+    status: dbStatus ? 'ok' : 'error',
+    database_url_set: !!process.env.DATABASE_URL,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Manejo de errores global
 app.use((err, req, res, next) => {
   console.error('❌ Error no controlado en la aplicación:', err.message);
