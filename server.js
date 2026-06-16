@@ -56,7 +56,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Ocurrió un error interno en el servidor.' });
 });
 
-// Inicializar el servidor
+// Inicializar el servidor solo si se ejecuta directamente (no en Vercel/serverless)
 async function startServer() {
   app.listen(PORT, () => {
     console.log(`🚀 Servidor backend escuchando en: http://localhost:${PORT}`);
@@ -69,4 +69,8 @@ async function startServer() {
   }
 }
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = app;
