@@ -900,9 +900,6 @@ function renderChapterView(verses, parsedCitation) {
     container.appendChild(verseEl);
   });
 
-  // Sincronizar lector lateral con el capítulo buscado
-  syncReaderWithCitation(firstVerse.book_id, firstVerse.chapter_number);
-
   // Scroll suave al primer versículo resaltado
   if (matchedIds.length > 0) {
     setTimeout(() => {
@@ -951,11 +948,6 @@ function renderStudyView(study, verses) {
     `;
     container.appendChild(verseEl);
   });
-
-  // Sincronizar lector lateral con el primer versículo del estudio
-  if (verses[0]) {
-    syncReaderWithCitation(verses[0].book_id, verses[0].chapter_number, verses[0].id);
-  }
 }
 
 // Sincroniza el lector lateral con un capítulo sin requerir evento de click
