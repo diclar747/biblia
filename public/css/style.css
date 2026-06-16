@@ -988,6 +988,12 @@ textarea.form-control {
   color: var(--primary);
 }
 
+.verse-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .verse-card-text {
   font-size: 1.05rem;
   line-height: 1.7;
@@ -1078,6 +1084,22 @@ textarea.form-control {
 
 .chapter-verse-actions {
   margin-top: 10px;
+}
+
+.verse-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.verse-text {
+  flex: 1;
+  line-height: 1.7;
+}
+
+.verse-line .verse-actions-menu-wrapper {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 /* Menú desplegable de acciones por versículo */

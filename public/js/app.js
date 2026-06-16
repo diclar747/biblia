@@ -305,22 +305,12 @@ async function loadReaderVerses(bookId, chapterNumber) {
       const citation = `${v.book_name} ${v.chapter_number}:${v.number}`;
       
       p.innerHTML = `
-        <span class="reader-verse-num">${v.number}</span>
-        <span>${escapeHTML(v.text)}</span>
-        <div class="verse-actions-toolbar reader-verse-actions" style="opacity: 0; transition: var(--transition);">
+        <div class="verse-line">
+          <span class="reader-verse-num">${v.number}</span>
+          <span class="verse-text">${escapeHTML(v.text)}</span>
           ${getVerseActionsHTML(v, citation)}
         </div>
       `;
-      
-      // Mostrar acciones al pasar mouse
-      p.addEventListener('mouseenter', () => {
-        const actions = p.querySelector('.reader-verse-actions');
-        if (actions) actions.style.opacity = '1';
-      });
-      p.addEventListener('mouseleave', () => {
-        const actions = p.querySelector('.reader-verse-actions');
-        if (actions) actions.style.opacity = '0';
-      });
 
       container.appendChild(p);
     });
@@ -900,9 +890,9 @@ function renderChapterView(verses, parsedCitation) {
     const citation = `${v.book_name} ${v.chapter_number}:${v.number}`;
 
     verseEl.innerHTML = `
-      <span class="reader-verse-num">${v.number}</span>
-      <span>${escapeHTML(v.text)}</span>
-      <div class="verse-actions-toolbar chapter-verse-actions">
+      <div class="verse-line">
+        <span class="reader-verse-num">${v.number}</span>
+        <span class="verse-text">${escapeHTML(v.text)}</span>
         ${getVerseActionsHTML(v, citation)}
       </div>
     `;
@@ -953,9 +943,9 @@ function renderStudyView(study, verses) {
     verseEl.className = 'reader-verse chapter-verse';
     const citation = `${v.book_name} ${v.chapter_number}:${v.number}`;
     verseEl.innerHTML = `
-      <span class="reader-verse-num">${v.number}</span>
-      <span>${escapeHTML(v.text)}</span>
-      <div class="verse-actions-toolbar chapter-verse-actions">
+      <div class="verse-line">
+        <span class="reader-verse-num">${v.number}</span>
+        <span class="verse-text">${escapeHTML(v.text)}</span>
         ${getVerseActionsHTML(v, citation)}
       </div>
     `;
@@ -1087,13 +1077,13 @@ async function executeSearchQuery() {
       card.innerHTML = `
         <div class="verse-card-header">
           <a href="#" class="verse-card-ref" onclick="openInReader(event, ${v.book_id}, ${v.chapter_number}, ${v.id})">${escapeHTML(citation)}</a>
-          <span class="verse-card-version">${v.version}</span>
+          <div class="verse-card-header-right">
+            <span class="verse-card-version">${v.version}</span>
+            ${getVerseActionsHTML(v, citation)}
+          </div>
         </div>
         <p class="verse-card-text">"${textWithHighlights}"</p>
         ${tagsHTML}
-        <div class="verse-actions-toolbar">
-          ${getVerseActionsHTML(v, citation)}
-        </div>
       `;
       container.appendChild(card);
     });
