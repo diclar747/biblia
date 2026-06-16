@@ -1,6 +1,6 @@
 const { pool } = require('../db/database');
 
-const ALLOWED_REACTIONS = ['❤️', '👍', '🙏', '😢', '😮', '🔥', '👏', '🕊️'];
+const ALLOWED_REACTIONS = ['❤️', '👍', '👎', '🙏', '😂', '😢', '😮', '🔥', '👏', '🕊️', '😍', '🤔', '🎉', '✨', '🌟', '💪', '🙌', '🤗', '✝️'];
 
 const communityController = {
   // Listar posts ordenados por fecha descendente, con conteo de reacciones y comentarios

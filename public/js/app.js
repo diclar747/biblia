@@ -2465,6 +2465,27 @@ async function loadSideEvents() {
 
 // ===== COMUNIDAD / MINI RED SOCIAL =====
 
+const COMMUNITY_REACTIONS = ['❤️', '👍', '👎', '🙏', '😂', '😢', '😮', '🔥', '👏', '🕊️', '😍', '🤔', '🎉', '✨', '🌟', '💪', '🙌', '🤗', '✝️'];
+
+function getCurrentUserAvatarHTML(size = 36) {
+  const user = getUser();
+  if (user && user.profile_image) {
+    return `<img src="${escapeHTML(user.profile_image)}" alt="" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;">`;
+  }
+  const initial = user ? user.name.charAt(0).toUpperCase() : 'U';
+  return `<span style="font-weight:700;font-size:${size * 0.45}px;">${escapeHTML(initial)}</span>`;
+}
+
+function formatCommunityTime(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = Math.floor((now - date) / 1000);
+  if (diff < 60) return 'Ahora';
+  if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `Hace ${Math.floor(diff / 3600)} h`;
+  return date.toLocaleString();
+}
+
 async function loadSideCommunity() {
   const container = document.getElementById('side-community-list');
   if (!container) return;
@@ -2483,63 +2504,130 @@ async function loadSideCommunity() {
 function renderCommunityPosts(container, posts) {
   container.innerHTML = '';
 
-  // Composer para nuevo post
+  // Encabezado profesional
+  const header = document.createElement('div');
+  header.className = 'community-header';
+  header.innerHTML = `
+    <div class="community-header-icon">🙌</div>
+    <div>
+      <h3 class="community-header-title">Comunidad</h3>
+      <p class="community-header-subtitle">Compartí reflexiones, animá a otros y crecé en la fe.</p>
+    </div>
+  `;
+  container.appendChild(header);
+
+  // Composer
   const composer = document.createElement('div');
   composer.className = 'community-composer';
+  const loggedIn = isLoggedIn();
   composer.innerHTML = `
-    <textarea id="community-post-input" rows="2" placeholder="¿Qué reflexión querés compartir hoy?"></textarea>
-    <button class="btn btn-primary btn-sm" onclick="submitCommunityPost()">Publicar</button>
+    <div class="community-composer-body">
+      <div class="community-avatar composer-avatar">${getCurrentUserAvatarHTML()}</div>
+      <textarea id="community-post-input" rows="2" ${loggedIn ? '' : 'disabled'} placeholder="${loggedIn ? '¿Qué reflexión querés compartir hoy?' : 'Iniciá sesión para publicar...'}"></textarea>
+    </div>
+    <div class="community-composer-footer">
+      <span class="community-composer-hint">${loggedIn ? 'Tu mensaje edifica a la comunidad.' : 'Solo los usuarios registrados pueden publicar.'}</span>
+      <button class="btn btn-primary btn-sm" onclick="submitCommunityPost()" ${loggedIn ? '' : 'disabled'}>Publicar</button>
+    </div>
   `;
   container.appendChild(composer);
 
   if (!posts || posts.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'side-panel-empty';
-    empty.textContent = 'Aún no hay publicaciones. ¡Sé el primero en compartir!';
+    const empty = document.createElement('div');
+    empty.className = 'community-empty-state';
+    empty.innerHTML = `
+      <div class="community-empty-icon">✨</div>
+      <p class="community-empty-text">Aún no hay publicaciones.</p>
+      <p class="community-empty-sub">Sé el primero en compartir una reflexión.</p>
+    `;
     container.appendChild(empty);
     return;
   }
 
-  posts.forEach(post => {
-    container.appendChild(createCommunityPostElement(post));
-  });
+  const feed = document.createElement('div');
+  feed.className = 'community-feed';
+  posts.forEach(post => feed.appendChild(createCommunityPostElement(post)));
+  container.appendChild(feed);
 }
 
 function createCommunityPostElement(post) {
-  const div = document.createElement('div');
-  div.className = 'community-post';
-  div.dataset.postId = post.id;
+  const article = document.createElement('article');
+  article.className = 'community-post-card';
+  article.dataset.postId = post.id;
 
-  const likes = (post.reactions || []).find(r => r.reaction === '👍')?.count || 0;
-  const dislikes = (post.reactions || []).find(r => r.reaction === '👎')?.count || 0;
+  const user = getUser();
+  const isAuthor = user && user.id === post.user_id;
   const userReaction = post.user_reaction || '';
-  const likeActive = userReaction === '👍' ? 'active' : '';
-  const dislikeActive = userReaction === '👎' ? 'active' : '';
+  const reactions = post.reactions || [];
 
-  div.innerHTML = `
+  const likes = reactions.find(r => r.reaction === '👍')?.count || 0;
+  const dislikes = reactions.find(r => r.reaction === '👎')?.count || 0;
+
+  const reactionSummaryHTML = reactions.length > 0
+    ? `<div class="community-reactions-summary" onclick="toggleCommunityComments(${post.id})">
+         ${reactions.slice(0, 5).map(r => `<span class="community-reaction-chip" title="${r.count}">${r.reaction} ${r.count}</span>`).join('')}
+       </div>`
+    : '';
+
+  const menuHTML = isAuthor
+    ? `<div class="community-post-menu">
+         <button class="community-menu-btn" onclick="deleteCommunityPost(${post.id})" title="Eliminar">🗑️</button>
+       </div>`
+    : '';
+
+  article.innerHTML = `
     <div class="community-post-header">
       <div class="community-avatar">${escapeHTML((post.user_name || 'U').charAt(0).toUpperCase())}</div>
       <div class="community-post-meta">
         <div class="community-username">${escapeHTML(post.user_name || 'Usuario')}</div>
-        <div class="community-time">${new Date(post.created_at).toLocaleString()}</div>
+        <div class="community-time">${formatCommunityTime(post.created_at)}</div>
       </div>
+      ${menuHTML}
     </div>
     <div class="community-post-content">${escapeHTML(post.content)}</div>
+    ${reactionSummaryHTML}
     <div class="community-post-actions">
-      <button class="community-like-btn ${likeActive}" onclick="toggleCommunityReaction('post', ${post.id}, '👍', '${escapeJS(userReaction)}')">👍 Me gusta${likes > 0 ? ` ${likes}` : ''}</button>
-      <button class="community-dislike-btn ${dislikeActive}" onclick="toggleCommunityReaction('post', ${post.id}, '👎', '${escapeJS(userReaction)}')">👎 No me gusta${dislikes > 0 ? ` ${dislikes}` : ''}</button>
-      <button class="community-action-btn" onclick="toggleCommunityComments(${post.id})">💬 ${post.comments_count || 0}</button>
-      <button class="community-action-btn" onclick="shareCommunityPost(${post.id})">🔗 Compartir</button>
-    </div>
-    <div class="community-comments" id="comments-${post.id}" style="display: none;">
-      <div class="community-comments-list" id="comments-list-${post.id}"></div>
-      <div class="community-comment-input-row">
-        <input type="text" id="comment-input-${post.id}" placeholder="Escribe un comentario..." />
-        <button class="btn btn-primary btn-sm" onclick="submitCommunityComment(${post.id})">Enviar</button>
+      <div class="community-actions-left">
+        <button class="community-action-btn like ${userReaction === '👍' ? 'active-like' : ''}" onclick="toggleCommunityReaction('post', ${post.id}, '👍', '${escapeJS(userReaction)}')">
+          <span class="community-action-icon">👍</span>
+          <span class="community-action-label">Me gusta</span>
+          ${likes > 0 ? `<span class="community-action-count">${likes}</span>` : ''}
+        </button>
+        <button class="community-action-btn dislike ${userReaction === '👎' ? 'active-dislike' : ''}" onclick="toggleCommunityReaction('post', ${post.id}, '👎', '${escapeJS(userReaction)}')">
+          <span class="community-action-icon">👎</span>
+          <span class="community-action-label">No me gusta</span>
+          ${dislikes > 0 ? `<span class="community-action-count">${dislikes}</span>` : ''}
+        </button>
+        <div class="community-reaction-trigger" onmouseenter="showReactionPicker(event, 'post', ${post.id}, '${escapeJS(userReaction)}')" onclick="showReactionPicker(event, 'post', ${post.id}, '${escapeJS(userReaction)}')">
+          <button class="community-action-btn react">
+            <span class="community-action-icon">😊</span>
+            <span class="community-action-label">Reaccionar</span>
+          </button>
+        </div>
+      </div>
+      <div class="community-actions-right">
+        <button class="community-action-btn" onclick="toggleCommunityComments(${post.id})">
+          <span class="community-action-icon">💬</span>
+          <span class="community-action-label">${post.comments_count || 0} comentarios</span>
+        </button>
+        <button class="community-action-btn" onclick="shareCommunityPost(${post.id})">
+          <span class="community-action-icon">🔗</span>
+          <span class="community-action-label">Compartir</span>
+        </button>
       </div>
     </div>
+    <div class="community-comments-panel" id="comments-${post.id}" style="display: none;">
+      <div class="community-comment-input-area">
+        <div class="community-avatar small">${getCurrentUserAvatarHTML(28)}</div>
+        <div class="community-comment-input-wrap">
+          <input type="text" id="comment-input-${post.id}" placeholder="Escribí un comentario..." />
+          <button class="btn btn-primary btn-sm" onclick="submitCommunityComment(${post.id})">Enviar</button>
+        </div>
+      </div>
+      <div class="community-comments-list" id="comments-list-${post.id}"></div>
+    </div>
   `;
-  return div;
+  return article;
 }
 
 async function submitCommunityPost() {
@@ -2578,13 +2666,11 @@ async function toggleCommunityReaction(type, id, emoji, currentReaction) {
 
   try {
     if (currentReaction === emoji) {
-      // Quitar reacción si ya está activa
       await fetch(url, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
     } else {
-      // Agregar o cambiar reacción
       await fetch(url, {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -2595,6 +2681,45 @@ async function toggleCommunityReaction(type, id, emoji, currentReaction) {
   } catch (error) {
     showToast('Error al reaccionar.', 'error');
   }
+}
+
+function showReactionPicker(event, type, id, currentReaction) {
+  event.stopPropagation();
+  closeReactionPicker();
+
+  const picker = document.createElement('div');
+  picker.id = 'community-reaction-picker';
+  picker.className = 'community-reaction-picker';
+  picker.innerHTML = COMMUNITY_REACTIONS.map(emoji =>
+    `<button class="community-picker-emoji ${currentReaction === emoji ? 'selected' : ''}" onclick="selectCommunityReaction(event, '${type}', ${id}, '${emoji}', '${escapeJS(currentReaction)}')">${emoji}</button>`
+  ).join('');
+
+  document.body.appendChild(picker);
+  const rect = event.currentTarget.getBoundingClientRect();
+  picker.style.top = `${rect.bottom + window.scrollY + 8}px`;
+  picker.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - 320)}px`;
+
+  let leaveTimeout;
+  picker.addEventListener('mouseenter', () => clearTimeout(leaveTimeout));
+  picker.addEventListener('mouseleave', () => {
+    leaveTimeout = setTimeout(closeReactionPicker, 200);
+  });
+
+  setTimeout(() => {
+    document.addEventListener('click', closeReactionPicker, { once: true });
+  }, 10);
+}
+
+function closeReactionPicker() {
+  const picker = document.getElementById('community-reaction-picker');
+  if (picker) picker.remove();
+}
+
+async function selectCommunityReaction(event, type, id, emoji, currentReaction) {
+  event.stopPropagation();
+  closeReactionPicker();
+  if (currentReaction === emoji) return;
+  await toggleCommunityReaction(type, id, emoji, currentReaction);
 }
 
 async function toggleCommunityComments(postId) {
@@ -2620,44 +2745,64 @@ async function toggleCommunityComments(postId) {
 function renderCommunityComments(container, comments, postId) {
   container.innerHTML = '';
   if (!comments || comments.length === 0) {
-    container.innerHTML = '<p class="community-loading">Aún no hay comentarios.</p>';
+    container.innerHTML = '<p class="community-empty-comments">Aún no hay comentarios. Sé el primero en comentar.</p>';
     return;
   }
 
   comments.forEach(comment => {
-    const likes = (comment.reactions || []).find(r => r.reaction === '👍')?.count || 0;
-    const dislikes = (comment.reactions || []).find(r => r.reaction === '👎')?.count || 0;
     const userReaction = comment.user_reaction || '';
-    const likeActive = userReaction === '👍' ? 'active' : '';
-    const dislikeActive = userReaction === '👎' ? 'active' : '';
+    const reactions = comment.reactions || [];
+    const likes = reactions.find(r => r.reaction === '👍')?.count || 0;
+    const dislikes = reactions.find(r => r.reaction === '👎')?.count || 0;
 
     const el = document.createElement('div');
     el.className = 'community-comment';
     el.innerHTML = `
-      <div class="community-comment-header">
-        <span class="community-username">${escapeHTML(comment.user_name || 'Usuario')}</span>
-        <span class="community-time">${new Date(comment.created_at).toLocaleString()}</span>
+      <div class="community-comment-avatar">
+        <div class="community-avatar small">${escapeHTML((comment.user_name || 'U').charAt(0).toUpperCase())}</div>
       </div>
-      <div class="community-comment-content">${escapeHTML(comment.content)}</div>
-      <div class="community-comment-actions">
-        <button class="community-like-btn small ${likeActive}" onclick="toggleCommunityReaction('comment', ${comment.id}, '👍', '${escapeJS(userReaction)}')">👍 Me gusta${likes > 0 ? ` ${likes}` : ''}</button>
-        <button class="community-dislike-btn small ${dislikeActive}" onclick="toggleCommunityReaction('comment', ${comment.id}, '👎', '${escapeJS(userReaction)}')">👎 No me gusta${dislikes > 0 ? ` ${dislikes}` : ''}</button>
-        <button class="community-action-btn small" onclick="showReplyInput(${postId}, ${comment.id})">↩️ Responder</button>
-      </div>
-      <div class="community-replies" id="replies-${comment.id}">
-        ${(comment.replies || []).map(reply => `
-          <div class="community-reply">
-            <div class="community-comment-header">
-              <span class="community-username">${escapeHTML(reply.user_name || 'Usuario')}</span>
-              <span class="community-time">${new Date(reply.created_at).toLocaleString()}</span>
-            </div>
-            <div class="community-comment-content">${escapeHTML(reply.content)}</div>
+      <div class="community-comment-body">
+        <div class="community-comment-bubble">
+          <div class="community-comment-header">
+            <span class="community-username">${escapeHTML(comment.user_name || 'Usuario')}</span>
+            <span class="community-time">· ${formatCommunityTime(comment.created_at)}</span>
           </div>
-        `).join('')}
-      </div>
-      <div class="community-reply-input-row" id="reply-row-${comment.id}" style="display: none;">
-        <input type="text" id="reply-input-${comment.id}" placeholder="Escribe una respuesta..." />
-        <button class="btn btn-primary btn-sm" onclick="submitCommunityReply(${postId}, ${comment.id})">Enviar</button>
+          <div class="community-comment-content">${escapeHTML(comment.content)}</div>
+        </div>
+        <div class="community-comment-actions">
+          <button class="community-action-btn mini ${userReaction === '👍' ? 'active-like' : ''}" onclick="toggleCommunityReaction('comment', ${comment.id}, '👍', '${escapeJS(userReaction)}')">
+            <span>👍</span> Me gusta${likes > 0 ? ` ${likes}` : ''}
+          </button>
+          <button class="community-action-btn mini ${userReaction === '👎' ? 'active-dislike' : ''}" onclick="toggleCommunityReaction('comment', ${comment.id}, '👎', '${escapeJS(userReaction)}')">
+            <span>👎</span> No me gusta${dislikes > 0 ? ` ${dislikes}` : ''}
+          </button>
+          <div class="community-reaction-trigger" onmouseenter="showReactionPicker(event, 'comment', ${comment.id}, '${escapeJS(userReaction)}')" onclick="showReactionPicker(event, 'comment', ${comment.id}, '${escapeJS(userReaction)}')">
+            <button class="community-action-btn mini react">
+              <span>😊</span> Reaccionar
+            </button>
+          </div>
+          <button class="community-action-btn mini" onclick="showReplyInput(${postId}, ${comment.id})">
+            <span>↩️</span> Responder
+          </button>
+        </div>
+        <div class="community-replies" id="replies-${comment.id}">
+          ${(comment.replies || []).map(reply => `
+            <div class="community-reply">
+              <div class="community-avatar tiny">${escapeHTML((reply.user_name || 'U').charAt(0).toUpperCase())}</div>
+              <div class="community-reply-bubble">
+                <div class="community-comment-header">
+                  <span class="community-username">${escapeHTML(reply.user_name || 'Usuario')}</span>
+                  <span class="community-time">· ${formatCommunityTime(reply.created_at)}</span>
+                </div>
+                <div class="community-comment-content">${escapeHTML(reply.content)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="community-reply-input-row" id="reply-row-${comment.id}" style="display: none;">
+          <input type="text" id="reply-input-${comment.id}" placeholder="Escribí una respuesta..." />
+          <button class="btn btn-primary btn-sm" onclick="submitCommunityReply(${postId}, ${comment.id})">Enviar</button>
+        </div>
       </div>
     `;
     container.appendChild(el);
@@ -2719,11 +2864,29 @@ function shareCommunityPost(postId) {
   });
 }
 
+async function deleteCommunityPost(postId) {
+  if (!confirm('¿Eliminar esta publicación?')) return;
+  try {
+    const res = await fetch(`/api/community/posts/${postId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error();
+    loadSideCommunity();
+    showToast('Publicación eliminada.', 'success');
+  } catch (error) {
+    showToast('Error al eliminar la publicación.', 'error');
+  }
+}
+
 // Exponer funciones globales para los onclick inline
 window.submitCommunityPost = submitCommunityPost;
 window.toggleCommunityReaction = toggleCommunityReaction;
+window.showReactionPicker = showReactionPicker;
+window.selectCommunityReaction = selectCommunityReaction;
 window.toggleCommunityComments = toggleCommunityComments;
 window.submitCommunityComment = submitCommunityComment;
 window.showReplyInput = showReplyInput;
 window.submitCommunityReply = submitCommunityReply;
 window.shareCommunityPost = shareCommunityPost;
+window.deleteCommunityPost = deleteCommunityPost;
