@@ -1178,9 +1178,16 @@ function renderSuggestions(box, suggestions, dropdownId) {
     if (item.type === 'verse') typeBadge = 'Versículo';
     if (item.type === 'tag') typeBadge = 'Tema';
 
+    const snippetHTML = item.snippet
+      ? `<span class="suggestion-snippet">${escapeHTML(item.snippet)}</span>`
+      : '';
+
     div.innerHTML = `
       <svg class="suggestion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <span>${highlightMatch(item.label, currentSuggestionQuery)}</span>
+      <span class="suggestion-main">
+        <span class="suggestion-label">${highlightMatch(item.label, currentSuggestionQuery)}</span>
+        ${snippetHTML}
+      </span>
       <span class="suggestion-badge">${typeBadge}</span>
     `;
 

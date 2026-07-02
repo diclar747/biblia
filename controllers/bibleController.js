@@ -35,6 +35,19 @@ function normalizeText(str) {
     .replace(/\s+/g, '');
 }
 
+// Construye una tsquery en espa\u00f1ol que matchea CUALQUIERA de las palabras (OR),
+// con soporte de prefijo opcional para autocompletado mientras se escribe.
+// Reutiliza el \u00edndice GIN existente sobre to_tsvector('spanish', text).
+function buildOrTsQuery(q, { prefix = false } = {}) {
+  const words = q
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.replace(/[&|!():'<>*\\]/g, ''))
+    .filter((w) => w.length > 0);
+  if (words.length === 0) return null;
+  return words.map((w) => (prefix ? `${w}:*` : w)).join(' | ');
+}
+
 // Encontrar la mejor coincidencia de libro con tolerancia a errores ortográficos
 function findBestBookMatch(typedName, books) {
   const cleanTyped = normalizeText(typedName);
@@ -284,13 +297,11 @@ const bibleController = {
 
       let queryParts = [];
       let queryParams = [];
+      const tsQuery = q && q.trim() !== '' ? buildOrTsQuery(q) : null;
 
-      if (q && q.trim() !== '') {
-        const keywords = q.trim().split(/\s+/);
-        keywords.forEach(word => {
-          queryParts.push('v.text ILIKE ?');
-          queryParams.push(`%${word}%`);
-        });
+      if (tsQuery) {
+        queryParts.push(`to_tsvector('spanish', v.text) @@ to_tsquery('spanish', ?)`);
+        queryParams.push(tsQuery);
       }
 
       if (version_id) {
@@ -333,8 +344,13 @@ const bibleController = {
         sql += ' WHERE ' + queryParts.join(' AND ');
       }
 
-      sql += ' ORDER BY b.book_order, c.number, v.number';
-      
+      if (tsQuery) {
+        sql += ` ORDER BY ts_rank(to_tsvector('spanish', v.text), to_tsquery('spanish', ?)) DESC, b.book_order, c.number, v.number`;
+        queryParams.push(tsQuery);
+      } else {
+        sql += ' ORDER BY b.book_order, c.number, v.number';
+      }
+
       let countSql = `SELECT COUNT(*) as total FROM (${sql}) as results`;
       const pgCountSql = toPgSql(countSql);
       const countResult = await pool.query(pgCountSql, queryParams);
@@ -343,15 +359,12 @@ const bibleController = {
       if (total === 0 && version_id && Number(version_id) !== 1) {
         queryParts = [];
         queryParams = [];
-        
-        if (q && q.trim() !== '') {
-          const keywords = q.trim().split(/\s+/);
-          keywords.forEach(word => {
-            queryParts.push('v.text ILIKE ?');
-            queryParams.push(`%${word}%`);
-          });
+
+        if (tsQuery) {
+          queryParts.push(`to_tsvector('spanish', v.text) @@ to_tsquery('spanish', ?)`);
+          queryParams.push(tsQuery);
         }
-        
+
         queryParts.push('v.version_id = ?');
         queryParams.push(1);
         
@@ -386,8 +399,13 @@ const bibleController = {
         if (queryParts.length > 0) {
           sql += ' WHERE ' + queryParts.join(' AND ');
         }
-        sql += ' ORDER BY b.book_order, c.number, v.number';
-        
+        if (tsQuery) {
+          sql += ` ORDER BY ts_rank(to_tsvector('spanish', v.text), to_tsquery('spanish', ?)) DESC, b.book_order, c.number, v.number`;
+          queryParams.push(tsQuery);
+        } else {
+          sql += ' ORDER BY b.book_order, c.number, v.number';
+        }
+
         countSql = `SELECT COUNT(*) as total FROM (${sql}) as results`;
         const pgFallbackCountSql = toPgSql(countSql);
         const fallbackCountResult = await pool.query(pgFallbackCountSql, queryParams);
@@ -517,23 +535,32 @@ const bibleController = {
         suggestions.push({ type: 'tag', label: `Tema: ${t.name}`, data: { tag: t.name } });
       });
 
-      // 4. Buscar palabras clave populares en el texto bíblico
-      if (suggestions.length < 5) {
-        const versesResult = await pool.query(
-          `SELECT DISTINCT b.name as book_name, c.number as chapter, v.number as verse 
-           FROM verses v 
-           JOIN chapters c ON v.chapter_id = c.id
-           JOIN books b ON c.book_id = b.id
-           WHERE v.text ILIKE $1 LIMIT 3`,
-          [`%${searchTerm}%`]
-        );
-        versesResult.rows.forEach(v => {
-          suggestions.push({
-            type: 'verse',
-            label: `${v.book_name} ${v.chapter}:${v.verse}`,
-            data: { book_name: v.book_name, chapter: v.chapter, verse: v.verse }
+      // 4. Búsqueda inteligente por cualquier palabra del texto bíblico (full-text,
+      // con prefijo para autocompletar mientras se escribe), rankeada por relevancia.
+      if (suggestions.length < 7) {
+        const prefixTsQuery = buildOrTsQuery(searchTerm, { prefix: true });
+        if (prefixTsQuery) {
+          const versesResult = await pool.query(
+            `SELECT b.name as book_name, c.number as chapter, v.number as verse, v.text,
+                    ts_rank(to_tsvector('spanish', v.text), to_tsquery('spanish', $1)) as rank
+             FROM verses v
+             JOIN chapters c ON v.chapter_id = c.id
+             JOIN books b ON c.book_id = b.id
+             WHERE to_tsvector('spanish', v.text) @@ to_tsquery('spanish', $1) AND v.version_id = 1
+             ORDER BY rank DESC
+             LIMIT ${7 - suggestions.length}`,
+            [prefixTsQuery]
+          );
+          versesResult.rows.forEach(v => {
+            const snippet = v.text.length > 90 ? `${v.text.slice(0, 90)}…` : v.text;
+            suggestions.push({
+              type: 'verse',
+              label: `${v.book_name} ${v.chapter}:${v.verse}`,
+              snippet,
+              data: { book_name: v.book_name, chapter: v.chapter, verse: v.verse }
+            });
           });
-        });
+        }
       }
 
       res.json(suggestions.slice(0, 7));

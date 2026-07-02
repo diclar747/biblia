@@ -556,6 +556,22 @@ header {
   flex-shrink: 0;
 }
 
+.suggestion-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.suggestion-snippet {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .suggestion-badge {
   margin-left: auto;
   font-size: 0.7rem;
