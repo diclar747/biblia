@@ -53,7 +53,7 @@ async function main() {
   // Conectar a la base de datos
   const client = new Client({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: false
   });
 
   try {
