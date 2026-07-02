@@ -307,6 +307,7 @@ async function loadVerseOfTheDay() {
   const textEl = document.getElementById('votd-text-content');
   const citationEl = document.getElementById('votd-citation');
   const versionEl = document.getElementById('votd-version');
+  const cardEl = document.getElementById('verse-of-the-day');
   if (!textEl) return;
 
   try {
@@ -320,8 +321,20 @@ async function loadVerseOfTheDay() {
     versionEl.textContent = verse.version;
 
     // Configurar botones de copia y compartir del versículo del día
-    document.getElementById('votd-copy').onclick = () => copyToClipboard(verse.text, citation);
-    document.getElementById('votd-share').onclick = () => shareOnWhatsApp(verse.text, citation);
+    // (stopPropagation para que no disparen también la navegación al capítulo)
+    document.getElementById('votd-copy').onclick = (event) => {
+      event.stopPropagation();
+      copyToClipboard(verse.text, citation);
+    };
+    document.getElementById('votd-share').onclick = (event) => {
+      event.stopPropagation();
+      shareOnWhatsApp(verse.text, citation);
+    };
+
+    // Clic en la cartilla completa: ir al capítulo para seguir leyendo desde ahí
+    if (cardEl) {
+      cardEl.onclick = () => triggerSearch(citation);
+    }
   } catch (error) {
     textEl.textContent = '"Jehová es mi pastor; nada me faltará."';
     citationEl.textContent = 'Salmos 23:1';
