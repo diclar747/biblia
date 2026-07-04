@@ -134,7 +134,8 @@ const bibleController = {
   // Obtener versículos de un capítulo para una versión específica
   async getVerses(req, res) {
     const { bookId, chapterNumber } = req.params;
-    const versionId = req.query.version_id || 1;
+    const parsedVersionId = req.query.version_id !== undefined ? parseInt(req.query.version_id, 10) : NaN;
+    const versionId = Number.isNaN(parsedVersionId) ? 1 : parsedVersionId;
 
     try {
       let result = await pool.query(
@@ -172,7 +173,9 @@ const bibleController = {
   // Buscador inteligente y avanzado
   async search(req, res) {
     const { q, version_id, book_id, testament, tag, limit = 20, offset = 0 } = req.query;
-    
+    const parsedVersionId = version_id !== undefined ? parseInt(version_id, 10) : NaN;
+    const validVersionId = Number.isNaN(parsedVersionId) ? null : parsedVersionId;
+
     try {
       const citationRegex = /^([1-3]?\s*[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+?)\s+(\d+)(?:(?:\s*:\s*|\s+)(\d+))?(?:\s*[-–]\s*(\d+))?$/;
       const citationMatch = q ? q.trim().match(citationRegex) : null;
@@ -199,7 +202,7 @@ const bibleController = {
       }
 
       if (parsedCitation) {
-        const effectiveVersionId = version_id ? Number(version_id) : 1;
+        const effectiveVersionId = validVersionId || 1;
         const chapterSql = `
           SELECT 
             v.id, 
@@ -304,9 +307,9 @@ const bibleController = {
         queryParams.push(tsQuery);
       }
 
-      if (version_id) {
+      if (validVersionId) {
         queryParts.push('v.version_id = ?');
-        queryParams.push(version_id);
+        queryParams.push(validVersionId);
       }
 
       if (book_id) {
@@ -356,7 +359,7 @@ const bibleController = {
       const countResult = await pool.query(pgCountSql, queryParams);
       let total = parseInt(countResult.rows[0].total);
 
-      if (total === 0 && version_id && Number(version_id) !== 1) {
+      if (total === 0 && validVersionId && validVersionId !== 1) {
         queryParts = [];
         queryParams = [];
 
